@@ -29,6 +29,7 @@ jobs:
           rm -f CLAUDE.md
           rm -f .env.local
           rm -f setup-mcp.ps1
+          rm -f README.md
 
       - name: Configure git
         run: |
