@@ -6,9 +6,14 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout private repo
         uses: actions/checkout@v4
