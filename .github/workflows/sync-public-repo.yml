@@ -36,9 +36,9 @@ jobs:
 
       - name: Push to public repository
         env:
-          PUBLIC_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
         run: |
-          git remote add public https://${PUBLIC_TOKEN}@github.com/solveSeeker/blankSolveSeeker.git
+          git remote add public https://github.com/solveSeeker/blankSolveSeeker.git
           git add -A
           git commit -m "Sync from private repo [skip ci]" || echo "No changes to commit"
-          git push public HEAD:main --force
+          git push https://oauth2:${GH_TOKEN}@github.com/solveSeeker/blankSolveSeeker.git HEAD:main --force
