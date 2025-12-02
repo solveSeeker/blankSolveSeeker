@@ -36,18 +36,17 @@ jobs:
 
       - name: Push to public repository
         env:
-          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          PUSH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
         run: |
-          # Debug: verificar que el token existe (sin mostrarlo)
-          if [ -z "$GH_TOKEN" ]; then
-            echo "ERROR: GH_TOKEN is empty!"
+          # Debug: verificar que el token existe
+          if [ -z "$PUSH_TOKEN" ]; then
+            echo "ERROR: PUSH_TOKEN is empty!"
             exit 1
           fi
-          echo "Token is present (length: ${#GH_TOKEN})"
+          echo "Token is present (length: ${#PUSH_TOKEN})"
 
-          git remote add public https://github.com/solveSeeker/blankSolveSeeker.git
           git add -A
           git commit -m "Sync from private repo [skip ci]" || echo "No changes to commit"
 
-          # Usar el formato correcto con el username
-          git push https://solveSeeker:${GH_TOKEN}@github.com/solveSeeker/blankSolveSeeker.git HEAD:main --force
+          # Push usando el token directamente en la URL
+          git push https://x-access-token:${PUSH_TOKEN}@github.com/solveSeeker/blankSolveSeeker.git HEAD:refs/heads/main --force
