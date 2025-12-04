@@ -35,54 +35,74 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleLogin} className="space-y-6">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-        />
+    <div className="w-full">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-normal text-gray-900 mb-2">
+          Iniciar sesión
+        </h1>
+        <p className="text-base text-gray-600">
+          Ingresa tu correo y contraseña para acceder
+        </p>
       </div>
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Contraseña
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-        />
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+      {/* Form */}
+      <form onSubmit={handleLogin} className="space-y-6">
+        {/* Email Input */}
+        <div>
+          <label htmlFor="email" className="block text-sm font-normal text-gray-900 mb-2">
+            Correo electrónico
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="tu@ejemplo.com"
+            className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all"
+          />
         </div>
-      )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-      </button>
+        {/* Password Input */}
+        <div>
+          <label htmlFor="password" className="block text-sm font-normal text-gray-900 mb-2">
+            Contraseña
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all"
+          />
+        </div>
 
-      <div className="text-center">
-        <a href="/register" className="text-sm text-primary hover:underline">
-          ¿No tienes cuenta? Regístrate
-        </a>
-      </div>
-    </form>
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 px-4 bg-black text-white text-base font-medium rounded-full hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+        </button>
+
+        {/* Register Link */}
+        <div className="text-center pt-4">
+          <span className="text-sm text-gray-600">¿No tienes cuenta? </span>
+          <a href="/register" className="text-sm text-gray-900 hover:underline font-medium">
+            Regístrate
+          </a>
+        </div>
+      </form>
+    </div>
   )
 }
