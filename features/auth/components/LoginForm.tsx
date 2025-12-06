@@ -25,7 +25,7 @@ export default function LoginForm() {
 
       if (signInError) throw signInError
 
-      router.push('/dashboard')
+      router.push('/admin')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
