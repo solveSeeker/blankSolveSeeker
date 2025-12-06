@@ -42,7 +42,7 @@ export default function Home() {
         <div className="w-full">
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-navy transition-all duration-100 ease-linear"
+              className="h-full transition-all duration-100 ease-linear"
               style={{
                 width: `${progress}%`,
                 backgroundColor: '#001f3f' // Navy color
