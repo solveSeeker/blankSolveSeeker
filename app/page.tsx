@@ -21,7 +21,7 @@ export default function Home() {
 
     // Redirección después de 3 segundos
     const redirectTimer = setTimeout(() => {
-      router.push('/login')
+      router.push('/auth/login')
     }, 3000)
 
     return () => {

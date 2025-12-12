@@ -41,19 +41,19 @@ export async function middleware(request: NextRequest) {
   })
 
   // Protected routes
-  const publicRoutes = ['/login', '/register', '/']
+  const publicRoutes = ['/auth/login', '/auth/register', '/']
   const isPublicRoute = publicRoutes.some(route =>
     url.pathname === route || url.pathname.startsWith(route + '/')
   )
 
   // Redirect to login if not authenticated and trying to access protected route
   if (!user && !isPublicRoute) {
-    url.pathname = '/login'
+    url.pathname = '/auth/login'
     return NextResponse.redirect(url)
   }
 
   // Redirect to dashboard if authenticated and trying to access login/register
-  if (user && (url.pathname === '/login' || url.pathname === '/register')) {
+  if (user && (url.pathname === '/auth/login' || url.pathname === '/auth/register')) {
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }

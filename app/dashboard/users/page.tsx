@@ -1,0 +1,11 @@
+'use client'
+
+import { UsersTable } from '@/features/users/components/users-table'
+
+export default function UsersPage() {
+  return (
+    <div className="p-8">
+      <UsersTable />
+    </div>
+  )
+}

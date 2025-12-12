@@ -5,7 +5,10 @@
       "Bash(npm install)",
       "Bash(npm run typecheck:*)",
       "Bash(npm run lint:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(if [ ! -d \"c:\\works\\cursor\\IA\\soft\\appBlankSolveSeeker\\docs\" ])",
+      "Bash(then mkdir \"c:\\works\\cursor\\IA\\soft\\appBlankSolveSeeker\\docs\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

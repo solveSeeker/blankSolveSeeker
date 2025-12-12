@@ -39,40 +39,69 @@ Este proyecto usa una arquitectura **Feature-First** donde cada feature es indep
 
 #### Frontend: Feature-First
 ```
-src/
-├── app/                      # Next.js App Router
-│   ├── (auth)/              # Rutas de autenticación (grupo)
-│   ├── (main)/              # Rutas principales (grupo)
-│   ├── layout.tsx           # Layout root
-│   └── page.tsx             # Home page
+app/                          # Next.js App Router
+├── auth/                     # Rutas de autenticación
+│   └── login/               # Login page (usa LoginPage de features/auth)
+│       └── page.tsx         # Re-exporta LoginPage
+│   └── signout/             # Signout route
+│       └── route.ts         # API route para cerrar sesión
 │
-├── features/                 # 🎯 Organizadas por funcionalidad
-│   ├── auth/                # Feature: Autenticación
-│   │   ├── components/      # Componentes específicos (LoginForm, etc.)
-│   │   ├── hooks/           # Hooks específicos (useAuth, etc.)
-│   │   ├── services/        # API calls (authService.ts)
-│   │   ├── types/           # Tipos específicos (User, Session, etc.)
-│   │   └── store/           # Estado local (authStore.ts)
-│   │
-│   ├── dashboard/           # Feature: Dashboard
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── services/
-│   │   ├── types/
-│   │   └── store/
-│   │
-│   └── [feature]/           # Otras features...
+├── dashboard/               # Dashboard de gestión
+│   ├── layout.tsx           # Layout con Sidebar y Header
+│   ├── page.tsx             # Redirect a /dashboard/users
+│   └── users/               # Gestión de usuarios
+│       └── page.tsx         # Página de usuarios
+
 │
-└── shared/                   # Código reutilizable
-    ├── components/          # UI components genéricos (Button, Card, etc.)
-    ├── hooks/               # Hooks genéricos (useDebounce, useLocalStorage, etc.)
-    ├── stores/              # Estado global (appStore.ts, userStore.ts)
-    ├── types/               # Tipos compartidos (api.ts, domain.ts)
-    ├── utils/               # Funciones utilitarias
-    ├── lib/                 # Configuraciones (supabase.ts, axios.ts)
-    ├── constants/           # Constantes de la app
-    └── assets/              # Imágenes, iconos, etc.
+├── layout.tsx               # Layout root
+└── page.tsx                 # Home page (redirect a /dashboard)
+
+features/                     # 🎯 Organizadas por funcionalidad
+├── auth/                    # Feature: Autenticación
+│   ├── components/          # LoginForm, RegisterForm
+│   ├── pages/               # LoginPage (página completa con layout)
+│   ├── hooks/               # useAuth, etc.
+│   ├── services/            # authService.ts
+│   ├── types/               # User, Session, etc.
+│   └── store/               # authStore.ts
+│
+├── users/                   # Feature: Usuarios
+│   ├── hooks/               # useProfiles, useUserRoles (GraphQL)
+│   ├── types/               # user.types.ts
+│   └── services/            # userService.ts (si es necesario)
+│
+└── [feature]/               # Otras features...
+
+shared/                       # Código reutilizable
+├── components/              # Sidebar, Button, Card, etc.
+├── hooks/                   # useDebounce, useLocalStorage, etc.
+├── stores/                  # appStore.ts, userStore.ts
+├── types/                   # api.ts, domain.ts
+├── utils/                   # Funciones utilitarias
+├── lib/                     # Configuraciones
+│   ├── supabase/           # client.ts, server.ts
+│   └── graphql/            # client.ts (GraphQL client)
+├── constants/               # Constantes de la app
+└── assets/                  # Imágenes, iconos, etc.
 ```
+
+#### Separación de Responsabilidades: `app/` vs `features/`
+
+**🎯 Regla Clave**: `app/` solo contiene rutas, `features/` contiene la lógica.
+
+- **`app/`**: Define las rutas de Next.js y re-exporta páginas desde `features/`
+  - Ejemplo: `app/auth/login/page.tsx` → `import { LoginPage } from '@/features/auth/pages'`
+  - Solo routing, NO lógica de negocio
+
+- **`features/`**: Contiene toda la lógica, componentes y páginas
+  - Ejemplo: `features/auth/pages/LoginPage.tsx` → Página completa con layout y componentes
+  - Ejemplo: `features/auth/components/LoginForm.tsx` → Formulario reutilizable
+
+- **`shared/`**: Código compartido entre múltiples features
+  - Ejemplo: `shared/components/Sidebar.tsx` → Usado en layout de admin
+  - Ejemplo: `shared/lib/graphql/client.ts` → Cliente GraphQL compartido
+
+**¿Por qué?** Esta separación permite que las features sean **completamente portables** y **reutilizables** en diferentes rutas sin duplicar código.
 
 ### Estructura de Proyecto Completa
 ```

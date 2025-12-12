@@ -141,7 +141,7 @@ export default function RegisterForm() {
       </button>
 
       <div className="text-center">
-        <a href="/login" className="text-sm text-primary hover:underline">
+        <a href="/auth/login" className="text-sm text-primary hover:underline">
           ¿Ya tienes cuenta? Inicia sesión
         </a>
       </div>
