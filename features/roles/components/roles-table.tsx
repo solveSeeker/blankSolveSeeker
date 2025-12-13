@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { RoleDialog } from './role-dialog'
 import { DeleteRoleDialog } from './delete-role-dialog'
-import { Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 
 export function RolesTable() {
   const { roles, isLoading, refetch } = useRoles()
@@ -87,12 +87,15 @@ export function RolesTable() {
   return (
     <div className="space-y-4 p-6">
       <div className="flex gap-4">
-        <Input
-          placeholder="Buscar por nombre o descripción..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          className="flex-1"
-        />
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Buscar por nombre o descripción..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-10 border-gray-200"
+          />
+        </div>
         <Button onClick={handleCreateClick} className="bg-gray-900 hover:bg-gray-800 text-white">
           <Plus className="w-4 h-4 mr-2" />
           Rol
@@ -109,7 +112,7 @@ export function RolesTable() {
         <div className="rounded-lg border border-gray-200 overflow-hidden">
           <Table>
             <TableHeader className="bg-gray-900">
-              <TableRow className="hover:bg-gray-900">
+              <TableRow className="hover:bg-gray-900 h-12">
                 <TableHead className="text-white">Nombre</TableHead>
                 <TableHead className="text-white">Descripción</TableHead>
                 <TableHead className="text-white">Fecha Creación</TableHead>
@@ -117,8 +120,8 @@ export function RolesTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRoles.map(role => (
-                <TableRow key={role.id}>
+              {filteredRoles.map((role, index) => (
+                <TableRow key={role.id} className={`h-12 border-0 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
                   <TableCell className="font-medium">{role.name}</TableCell>
                   <TableCell className="text-gray-600">{role.description}</TableCell>
                   <TableCell className="text-sm text-gray-500">
@@ -132,7 +135,7 @@ export function RolesTable() {
                       className="h-8 w-8"
                     >
                       <svg
-                        className="h-4 w-4"
+                        className="h-5 w-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -152,7 +155,7 @@ export function RolesTable() {
                       className="h-8 w-8"
                     >
                       <svg
-                        className="h-4 w-4"
+                        className="h-5 w-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"

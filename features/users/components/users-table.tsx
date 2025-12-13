@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useProfiles, type Profile } from '@/features/users/hooks/useProfiles'
+import { useUserRoles } from '@/features/users/hooks/useUserRoles'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,10 +12,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Empty } from '@/components/ui/empty'
 import { UserDialog } from './user-dialog'
 import { DeleteUserDialog } from './delete-user-dialog'
-import { Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 
 export function UsersTable() {
   const { profiles, isLoading, error, refetch } = useProfiles()
+  const { getRolesForUser, isLoading: rolesLoading } = useUserRoles()
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredProfiles, setFilteredProfiles] = useState(profiles || [])
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
@@ -59,12 +61,15 @@ export function UsersTable() {
     <div className="space-y-4">
       {/* Search */}
       <div className="flex gap-2">
-        <Input
-          placeholder="Buscar por nombre o email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Buscar por nombre o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 border-gray-200"
+          />
+        </div>
         <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gray-900 hover:bg-gray-800 text-white">
           <Plus className="w-4 h-4 mr-2" />
           Usuario
@@ -85,10 +90,10 @@ export function UsersTable() {
       ) : filteredProfiles.length === 0 ? (
         <Empty title="No hay usuarios" />
       ) : (
-        <div className="border rounded-lg">
+        <div className="rounded-lg border border-gray-200 overflow-hidden">
           <Table>
             <TableHeader className="bg-gray-900">
-              <TableRow className="hover:bg-gray-900">
+              <TableRow className="hover:bg-gray-900 h-12">
                 <TableHead className="text-white">Usuario</TableHead>
                 <TableHead className="text-white">Email</TableHead>
                 <TableHead className="text-white">Rol</TableHead>
@@ -96,8 +101,8 @@ export function UsersTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProfiles.map((profile) => (
-                <TableRow key={profile.id}>
+              {filteredProfiles.map((profile, index) => (
+                <TableRow key={profile.id} className={`h-12 border-0 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
@@ -112,9 +117,16 @@ export function UsersTable() {
                     {profile.email}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      Usuario
-                    </Badge>
+                    {getRolesForUser(profile.id).map((roleName, idx) => (
+                      <Badge key={idx} variant="outline" className="mr-1">
+                        {roleName}
+                      </Badge>
+                    ))}
+                    {getRolesForUser(profile.id).length === 0 && (
+                      <Badge variant="outline" className="text-gray-400">
+                        Sin rol
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button
@@ -124,7 +136,7 @@ export function UsersTable() {
                       className="h-8 w-8"
                     >
                       <svg
-                        className="h-4 w-4"
+                        className="h-5 w-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -144,7 +156,7 @@ export function UsersTable() {
                       className="h-8 w-8"
                     >
                       <svg
-                        className="h-4 w-4"
+                        className="h-5 w-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
