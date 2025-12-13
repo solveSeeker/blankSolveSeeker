@@ -8,6 +8,12 @@ import { Label } from '@/components/ui/label'
 import { createClient } from '@/shared/lib/supabase/client'
 import { type Profile } from '@/features/users/hooks/useProfiles'
 
+interface Role {
+  id: string
+  name: string
+  description: string
+}
+
 interface UserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -18,19 +24,38 @@ interface UserDialogProps {
 export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProps) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState('usuario')
+  const [selectedRoleId, setSelectedRoleId] = useState('')
+  const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Cargar roles disponibles cuando el dialog se abre
+  useEffect(() => {
+    if (open && !user) {
+      // Solo cargar roles al crear un nuevo usuario
+      fetch('/api/roles')
+        .then((res) => res.json())
+        .then((data) => {
+          setRoles(data)
+          // Seleccionar 'vendedor' por defecto
+          const vendedorRole = data.find((r: Role) => r.name === 'vendedor')
+          if (vendedorRole) {
+            setSelectedRoleId(vendedorRole.id)
+          }
+        })
+        .catch((err) => {
+          console.error('Error loading roles:', err)
+        })
+    }
+  }, [open, user])
 
   useEffect(() => {
     if (user) {
       setFullName(user.fullName || '')
       setEmail(user.email || '')
-      setRole('usuario')
     } else {
       setFullName('')
       setEmail('')
-      setRole('usuario')
     }
     setError(null)
   }, [user, open])
@@ -41,30 +66,41 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
     setError(null)
 
     try {
-      const supabase = createClient()
-
       if (user) {
-        // Update
+        // Update existing user - solo actualizar perfil
+        const supabase = createClient()
         const { error: updateError } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .update({
             full_name: fullName,
-            role: role,
           })
           .eq('id', user.id)
 
         if (updateError) throw updateError
       } else {
-        // Create
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            full_name: fullName,
-            email: email,
-            role: role,
-          })
+        // Create new user - usar API route que crea auth.users + perfil + rol
+        const response = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            fullName,
+            roleId: selectedRoleId,
+          }),
+        })
 
-        if (insertError) throw insertError
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Error al crear usuario')
+        }
+
+        // Success - mostrar mensaje con contraseña temporal
+        const data = await response.json()
+        alert(
+          `Usuario creado exitosamente.\n\nEmail: ${email}\nContraseña temporal: CambiaTuClave\n\nEl usuario debe cambiar su contraseña en el primer login.`
+        )
       }
 
       onOpenChange(false)
@@ -114,19 +150,28 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="role">Rol</Label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            >
-              <option value="usuario">Usuario</option>
-              <option value="admin">Administrador</option>
-              <option value="vendedor">Vendedor</option>
-            </select>
-          </div>
+          {!user && (
+            <div className="space-y-2">
+              <Label htmlFor="role">Rol</Label>
+              <select
+                id="role"
+                value={selectedRoleId}
+                onChange={(e) => setSelectedRoleId(e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                required
+              >
+                {roles.length === 0 ? (
+                  <option value="">Cargando roles...</option>
+                ) : (
+                  roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+          )}
 
           {error && (
             <div className="text-destructive text-sm">
