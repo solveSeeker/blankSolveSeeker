@@ -95,7 +95,7 @@ export function RolesTable() {
         />
         <Button onClick={handleCreateClick} className="bg-gray-900 hover:bg-gray-800 text-white">
           <Plus className="w-4 h-4 mr-2" />
-          Crear Rol
+          Rol
         </Button>
       </div>
 
@@ -108,12 +108,12 @@ export function RolesTable() {
       ) : (
         <div className="rounded-lg border border-gray-200 overflow-hidden">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead>Fecha Creación</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+            <TableHeader className="bg-gray-900">
+              <TableRow className="hover:bg-gray-900">
+                <TableHead className="text-white">Nombre</TableHead>
+                <TableHead className="text-white">Descripción</TableHead>
+                <TableHead className="text-white">Fecha Creación</TableHead>
+                <TableHead className="text-right text-white">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

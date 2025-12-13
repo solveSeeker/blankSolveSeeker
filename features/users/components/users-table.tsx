@@ -67,7 +67,7 @@ export function UsersTable() {
         />
         <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gray-900 hover:bg-gray-800 text-white">
           <Plus className="w-4 h-4 mr-2" />
-          Crear Usuario
+          Usuario
         </Button>
       </div>
 
@@ -87,12 +87,12 @@ export function UsersTable() {
       ) : (
         <div className="border rounded-lg">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+            <TableHeader className="bg-gray-900">
+              <TableRow className="hover:bg-gray-900">
+                <TableHead className="text-white">Usuario</TableHead>
+                <TableHead className="text-white">Email</TableHead>
+                <TableHead className="text-white">Rol</TableHead>
+                <TableHead className="text-right text-white">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
