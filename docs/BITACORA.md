@@ -46,7 +46,56 @@ CREATE POLICY "Service role can manage all user roles"
 
 ---
 
-#### 2. **Usuario Admin sin Rol Asignado**
+#### 2. **NUEVO: Usuarios Solo Ven Su Propio Perfil (RLS Restrictivo)**
+
+**Problema:**
+Después de crear el usuario juan@ejemplo.com, al hacer login solo podía ver su propio perfil en la tabla de usuarios. El usuario admin tampoco aparecía.
+
+**Diagnóstico:**
+- GraphQL query a `profilesCollection` retornaba solo 1 perfil
+- RLS policies en tabla `profiles` eran demasiado restrictivas
+- No había política que permitiera ver todos los perfiles
+
+**Intento 1 - Migración 007 (Falló):**
+Intenté crear política basada en `tenant_id` y `is_sysadmin`, pero causó **recursión infinita**:
+```sql
+-- ❌ POLÍTICA PROBLEMÁTICA (causó recursión)
+CREATE POLICY "Authenticated users can view all profiles"
+  ON profiles FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles  -- ← Consulta profiles dentro de política de profiles
+      WHERE id = auth.uid() AND is_sysadmin = true
+    )
+    OR auth.role() = 'authenticated'
+  );
+```
+
+**Solución Final - Migración 008:**
+Aplicada vía Supabase MCP con política simple sin subqueries:
+```sql
+-- ✅ POLÍTICA CORRECTA (sin recursión)
+DROP POLICY IF EXISTS "Authenticated users can view all profiles" ON profiles;
+
+CREATE POLICY "All authenticated users can view profiles"
+  ON profiles FOR SELECT
+  TO authenticated
+  USING (true);
+```
+
+**Resultado:**
+- ✅ Todos los usuarios autenticados pueden ver todos los perfiles
+- ✅ Sin recursión infinita
+- ✅ GraphQL retorna 2 usuarios: Juan Pérez y solve.seeker.dev@gmail.com
+
+**Lección Aprendida:**
+- Evitar subqueries que consulten la misma tabla dentro de políticas RLS
+- Usar políticas simples: `USING (true)` para acceso completo a authenticated users
+- Para restricciones complejas, usar lógica de aplicación en lugar de RLS
+
+---
+
+#### 3. **Usuario Admin sin Rol Asignado**
 
 **Problema:**
 El usuario admin `solve.seeker.dev@gmail.com` no tenía ningún rol en la tabla `user_roles`, lo que impedía operaciones administrativas.
@@ -64,7 +113,7 @@ VALUES (
 
 ---
 
-#### 3. **Schema Incorrecto en API Route**
+#### 4. **Schema Incorrecto en API Route**
 
 **Problema:**
 El API `/api/admin/users` usaba schema incorrecto:
@@ -232,8 +281,7 @@ GraphQL refetch → Usuario visible en tabla
 
 ### 📝 Archivos Modificados
 
-**Commit:** `a8b4462`
-**Mensaje:** `fix: corregir creación de usuarios y RLS recursión`
+**Commit 1:** `a8b4462` - `fix: corregir creación de usuarios y RLS recursión`
 
 1. **`supabase/migrations/006_fix_user_roles_rls_recursion.sql`** (NUEVO)
    - Drop política recursiva
@@ -249,6 +297,19 @@ GraphQL refetch → Usuario visible en tabla
    - Líneas 33-50: useEffect para cargar roles
    - Líneas 82-103: Llamada a API `/api/admin/users`
    - Líneas 117-138: Selector de rol en formulario
+
+**Commit 2:** `d189f5b` - `docs: agregar bitácora completa de sesión`
+
+4. **`docs/BITACORA.md`** (NUEVO - 310 líneas)
+   - Documentación completa de toda la sesión
+   - Registro del cambio arquitectural `is_sysadmin`
+
+**Commit 3:** `50bd689` - `fix: corregir RLS de profiles para visibilidad`
+
+5. **`supabase/migrations/007_fix_user_profiles_rls_tenant_visibility.sql`** (NUEVO)
+   - Archivo guardado (intentó usar user_profiles - nombre incorrecto)
+   - Migración 008 aplicada manualmente vía Supabase MCP
+   - Policy final: `USING (true)` para authenticated users
 
 ---
 
