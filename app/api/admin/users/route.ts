@@ -68,10 +68,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // 3. Get admin's tenant
+    // 3. Verify admin profile exists and get tenant_id
     const { data: adminProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('tenant_id')
+      .select('id, email, tenant_id')
       .eq('id', user.id)
       .single()
 
@@ -180,6 +180,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: authUser.user.id,
         role_id: finalRoleId,
+        key: `user_role_${authUser.user.id}_${finalRoleId}`,
       })
 
     if (roleAssignError) {
