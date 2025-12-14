@@ -70,7 +70,13 @@ export function useUserRoles() {
     }
   }
 
-  const getRolesForUser = (userId: string): string[] => {
+  const getRolesForUser = (userId: string, isSysAdmin?: boolean): string[] => {
+    // Si es sysadmin, retornar 'SysAdmin' directamente
+    if (isSysAdmin) {
+      return ['SysAdmin']
+    }
+
+    // Para usuarios normales, buscar en user_roles
     return userRoles
       .filter((ur) => ur.user_id === userId)
       .map((ur) => ur.role_name || 'unknown')

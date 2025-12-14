@@ -117,12 +117,12 @@ export function UsersTable() {
                     {profile.email}
                   </TableCell>
                   <TableCell>
-                    {getRolesForUser(profile.id).map((roleName, idx) => (
+                    {getRolesForUser(profile.id, profile.is_sysadmin).map((roleName, idx) => (
                       <Badge key={idx} variant="outline" className="mr-1">
                         {roleName}
                       </Badge>
                     ))}
-                    {getRolesForUser(profile.id).length === 0 && (
+                    {getRolesForUser(profile.id, profile.is_sysadmin).length === 0 && (
                       <Badge variant="outline" className="text-gray-400">
                         Sin rol
                       </Badge>

@@ -8,6 +8,7 @@ export interface Profile {
   fullName: string | null
   avatarURL: string | null
   is_active: boolean
+  is_sysadmin: boolean
   created_at: string
   updated_at: string
 }
@@ -22,6 +23,7 @@ const GET_PROFILES_QUERY = gql`
           fullName
           avatarURL
           is_active
+          is_sysadmin
           created_at
           updated_at
         }
