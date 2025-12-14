@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     const isAdmin = userRoles?.some(
-      (ur: { roles: { name: string } | null }) => ur.roles?.name === 'admin'
+      (ur: { roles: { name: string }[] }) => ur.roles?.some((r) => r.name === 'admin')
     )
 
     if (!isAdmin) {
