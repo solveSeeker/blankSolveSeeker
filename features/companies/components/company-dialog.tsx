@@ -91,9 +91,10 @@ export function CompanyDialog({ open, onOpenChange, company, onSaved }: CompanyD
         if (updateError) throw updateError
       } else {
         // Create new company
-        const createData: CreateCompanyInput = {
+        const createData = {
           name,
           slug,
+          key: slug, // usar slug como key
           primary_color: primaryColor,
           secondary_color: secondaryColor,
           accent_color: accentColor,
