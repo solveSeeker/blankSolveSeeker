@@ -231,7 +231,7 @@ export function CompanyDialog({ open, onOpenChange, company, onSaved }: CompanyD
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="bg-gray-900 hover:bg-gray-800">
+            <Button type="submit" disabled={loading} className="bg-gray-900 hover:bg-gray-800 text-white">
               {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'}
             </Button>
           </DialogFooter>
