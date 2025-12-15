@@ -117,7 +117,7 @@ export function CompanyDialog({ open, onOpenChange, company, onSaved }: CompanyD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] bg-white">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Empresa' : 'Nueva Empresa'}</DialogTitle>
           <DialogDescription>
