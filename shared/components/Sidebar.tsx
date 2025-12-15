@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/shared/lib/supabase/client'
 import { useState } from 'react'
-import { UserCog, Shield, LogOut } from 'lucide-react'
+import { UserCog, Shield, Building2, LogOut } from 'lucide-react'
 
 interface MenuItem {
   icon: React.ReactNode
@@ -40,6 +40,11 @@ export default function Sidebar() {
       icon: <Shield className="w-5 h-5" />,
       label: 'Roles',
       href: '/dashboard/roles',
+    },
+    {
+      icon: <Building2 className="w-5 h-5" />,
+      label: 'Empresas',
+      href: '/dashboard/companies',
     },
   ]
 
