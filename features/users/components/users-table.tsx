@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useProfiles, type Profile } from '@/features/users/hooks/useProfiles'
 import { useUserRoles } from '@/features/users/hooks/useUserRoles'
+import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +18,7 @@ import { Plus, Search } from 'lucide-react'
 export function UsersTable() {
   const { profiles, isLoading, error, refetch } = useProfiles()
   const { getRolesForUser, isLoading: rolesLoading } = useUserRoles()
+  const { isSysAdmin, isLoading: currentUserLoading } = useCurrentUserProfile()
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredProfiles, setFilteredProfiles] = useState(profiles || [])
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
@@ -26,13 +28,20 @@ export function UsersTable() {
 
   useEffect(() => {
     if (profiles) {
-      const filtered = profiles.filter(profile =>
-        profile.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.email?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      const filtered = profiles.filter(profile => {
+        // Search filter
+        const matchesSearch =
+          profile.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          profile.email?.toLowerCase().includes(searchTerm.toLowerCase())
+
+        // Visibility filter: if current user is NOT sysadmin, hide sysadmin users
+        const isVisible = isSysAdmin || !profile.is_sysadmin
+
+        return matchesSearch && isVisible
+      })
       setFilteredProfiles(filtered)
     }
-  }, [profiles, searchTerm])
+  }, [profiles, searchTerm, isSysAdmin])
 
   const handleEditUser = (user: Profile) => {
     setSelectedUser(user)
