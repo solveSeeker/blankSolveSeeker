@@ -2,7 +2,7 @@
 
 import Sidebar from '@/shared/components/Sidebar'
 import { usePathname } from 'next/navigation'
-import { UserCog, Shield } from 'lucide-react'
+import { UserCog, Shield, Building2 } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -23,6 +23,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         title: 'Roles',
         description: 'Gestiona los roles y permisos del sistema',
         icon: <Shield className="w-5 h-5" />
+      }
+    }
+    if (pathname.includes('/companies')) {
+      return {
+        category: 'Gestión',
+        title: 'Empresas',
+        description: 'Gestiona las empresas del sistema multi-tenant',
+        icon: <Building2 className="w-5 h-5" />
       }
     }
     return {
