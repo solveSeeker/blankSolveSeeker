@@ -55,6 +55,36 @@ export function CompaniesTable() {
     refetch()
   }
 
+  const handleToggleVisible = async (company: Company) => {
+    try {
+      const supabase = (await import('@/shared/lib/supabase/client')).createClient()
+      const { error } = await supabase
+        .from('companies')
+        .update({ visible: !company.visible })
+        .eq('id', company.id)
+
+      if (error) throw error
+      refetch()
+    } catch (err) {
+      console.error('Error al cambiar visibilidad:', err)
+    }
+  }
+
+  const handleToggleEnabled = async (company: Company) => {
+    try {
+      const supabase = (await import('@/shared/lib/supabase/client')).createClient()
+      const { error } = await supabase
+        .from('companies')
+        .update({ enabled: !company.enabled })
+        .eq('id', company.id)
+
+      if (error) throw error
+      refetch()
+    } catch (err) {
+      console.error('Error al cambiar estado activo:', err)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Search */}
@@ -138,16 +168,28 @@ export function CompaniesTable() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2 items-center">
-                      {company.visible ? (
-                        <Eye className="h-5 w-5 text-green-600" title="Visible" />
-                      ) : (
-                        <EyeOff className="h-5 w-5 text-gray-400" title="Oculta" />
-                      )}
-                      {company.enabled ? (
-                        <Check className="h-5 w-5 text-green-600" title="Activa" />
-                      ) : (
-                        <X className="h-5 w-5 text-gray-400" title="Inactiva" />
-                      )}
+                      <button
+                        onClick={() => handleToggleVisible(company)}
+                        className="hover:opacity-70 transition-opacity"
+                        title={company.visible ? "Click para ocultar" : "Click para hacer visible"}
+                      >
+                        {company.visible ? (
+                          <Eye className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <EyeOff className="h-5 w-5 text-gray-400" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleToggleEnabled(company)}
+                        className="hover:opacity-70 transition-opacity"
+                        title={company.enabled ? "Click para desactivar" : "Click para activar"}
+                      >
+                        {company.enabled ? (
+                          <Check className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <X className="h-5 w-5 text-gray-400" />
+                        )}
+                      </button>
                     </div>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
