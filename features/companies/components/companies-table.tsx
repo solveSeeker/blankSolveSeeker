@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Empty } from '@/components/ui/empty'
 import { CompanyDialog } from './company-dialog'
 import { DeleteCompanyDialog } from './delete-company-dialog'
-import { Plus, Search, Building2 } from 'lucide-react'
+import { Plus, Search, Building2, Eye, EyeOff, Check, X } from 'lucide-react'
 
 export function CompaniesTable() {
   const { companies, isLoading, error, refetch } = useCompanies()
@@ -137,13 +137,17 @@ export function CompaniesTable() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      <Badge variant={company.visible ? "default" : "secondary"} className="text-xs">
-                        {company.visible ? 'Visible' : 'Oculta'}
-                      </Badge>
-                      <Badge variant={company.enabled ? "default" : "secondary"} className="text-xs">
-                        {company.enabled ? 'Activa' : 'Inactiva'}
-                      </Badge>
+                    <div className="flex gap-2 items-center">
+                      {company.visible ? (
+                        <Eye className="h-5 w-5 text-green-600" title="Visible" />
+                      ) : (
+                        <EyeOff className="h-5 w-5 text-gray-400" title="Oculta" />
+                      )}
+                      {company.enabled ? (
+                        <Check className="h-5 w-5 text-green-600" title="Activa" />
+                      ) : (
+                        <X className="h-5 w-5 text-gray-400" title="Inactiva" />
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
