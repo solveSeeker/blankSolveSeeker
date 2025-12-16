@@ -45,7 +45,7 @@ export default function LoginForm() {
       {/* Logo */}
       <div className="flex justify-center mb-8">
         <img
-          src="/logo.svg"
+          src="/logoSolveSeeker.webp"
           alt="Solve Seeker Logo"
           className="h-16 w-auto"
         />
