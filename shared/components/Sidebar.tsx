@@ -51,7 +51,12 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-white min-h-screen flex flex-col border-r border-gray-200">
       {/* Dashboard Header */}
-      <div className="flex items-center h-16 px-6 border-b border-gray-200">
+      <div className="flex items-center gap-3 h-16 px-6 border-b border-gray-200">
+        <img
+          src="/isotipo.webp"
+          alt="Solve Seeker"
+          className="h-8 w-auto"
+        />
         <h1 className="text-gray-900 text-lg font-semibold">Dashboard</h1>
       </div>
 
