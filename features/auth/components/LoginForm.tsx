@@ -42,6 +42,15 @@ export default function LoginForm() {
 
   return (
     <div className="w-full">
+      {/* Logo */}
+      <div className="flex justify-center mb-8">
+        <img
+          src="/logo.svg"
+          alt="Solve Seeker Logo"
+          className="h-16 w-auto"
+        />
+      </div>
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-normal mb-2">
