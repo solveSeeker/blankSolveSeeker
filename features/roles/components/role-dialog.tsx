@@ -25,7 +25,8 @@ interface RoleDialogProps {
 export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialogProps) {
   const [formData, setFormData] = useState<CreateRoleInput>({
     name: '',
-    description: ''
+    description: '',
+    hrchy: null
   })
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,12 +35,14 @@ export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialog
     if (role) {
       setFormData({
         name: role.name,
-        description: role.description
+        description: role.description,
+        hrchy: role.hrchy !== undefined ? role.hrchy : null
       })
     } else {
       setFormData({
         name: '',
-        description: ''
+        description: '',
+        hrchy: null
       })
     }
     setError(null)
@@ -103,6 +106,18 @@ export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialog
               placeholder="ej: Acceso completo al sistema"
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
+              disabled={isSaving}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hrchy">Jerarquía</Label>
+            <Input
+              id="hrchy"
+              type="number"
+              placeholder="ej: 1"
+              value={formData.hrchy !== null ? formData.hrchy : ''}
+              onChange={e => setFormData({ ...formData, hrchy: e.target.value ? parseInt(e.target.value) : null })}
               disabled={isSaving}
             />
           </div>

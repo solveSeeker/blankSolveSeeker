@@ -1,0 +1,11 @@
+'use client'
+
+import { SettingsPage } from '@/features/settings/components/settings-page'
+
+export default function Settings() {
+  return (
+    <div className="p-8">
+      <SettingsPage />
+    </div>
+  )
+}

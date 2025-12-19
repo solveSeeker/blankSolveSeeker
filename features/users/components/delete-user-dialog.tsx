@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { createClient } from '@/shared/lib/supabase/client'
 import { type Profile } from '@/features/users/hooks/useProfiles'
 
 interface DeleteUserDialogProps {
@@ -23,14 +22,14 @@ export function DeleteUserDialog({ open, onOpenChange, user, onDeleted }: Delete
     setError(null)
 
     try {
-      const supabase = createClient()
+      const response = await fetch(`/api/admin/users/${user.id}`, {
+        method: 'DELETE',
+      })
 
-      const { error: deleteError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', user.id)
-
-      if (deleteError) throw deleteError
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al eliminar usuario')
+      }
 
       onOpenChange(false)
       onDeleted()
@@ -43,7 +42,7 @@ export function DeleteUserDialog({ open, onOpenChange, user, onDeleted }: Delete
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="bg-white">
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -62,7 +61,7 @@ export function DeleteUserDialog({ open, onOpenChange, user, onDeleted }: Delete
           <AlertDialogAction
             onClick={handleDelete}
             disabled={loading}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-red-600 text-white hover:bg-red-700"
           >
             {loading ? 'Eliminando...' : 'Eliminar'}
           </AlertDialogAction>

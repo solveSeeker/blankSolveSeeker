@@ -5,31 +5,30 @@ import { createClient } from '@/shared/lib/supabase/server'
 interface CreateUserRequest {
   email: string
   fullName: string
-  roleId?: string
+  isSysAdmin?: boolean
 }
 
 /**
  * POST /api/admin/users
  *
- * Creates a new user with auth.users entry, profile, and role assignment
+ * Creates a new user with auth.users entry and profile
  *
  * Request body:
  * {
  *   "email": "user@example.com",
  *   "fullName": "John Doe",
- *   "roleId": "uuid-optional" // Defaults to 'vendedor' if not provided
+ *   "isSysAdmin": false // Optional, defaults to false
  * }
  *
  * Security:
- * - Requires authenticated user with 'admin' role
- * - Creates users in the same tenant as the admin
+ * - Requires authenticated user with 'admin' role or is_sysadmin=true
  * - Auto-confirms email (email_confirm: true)
  * - Sets default password: 'CambiaTuClave'
  *
  * Transaction Flow:
  * 1. Create auth.users
- * 2. Create user_profiles (rollback if fails)
- * 3. Assign role in user_roles (rollback if fails)
+ * 2. Create user_profiles with is_sysadmin flag (rollback if fails)
+ * 3. Roles are assigned later via the role management modal
  */
 export async function POST(request: Request) {
   try {
@@ -43,35 +42,56 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    // 2. Verify user has admin role
-    const { data: userRoles, error: rolesError } = await supabase
-      .from('user_roles')
-      .select('roles(name)')
-      .eq('user_id', user.id)
+    // 2. Verify user has admin role or is sysadmin
+    const { data: currentUserProfile, error: profileCheckError } = await supabase
+      .from('profiles')
+      .select('is_sysadmin')
+      .eq('id', user.id)
+      .single()
 
-    if (rolesError) {
-      console.error('Error fetching user roles:', rolesError)
+    if (profileCheckError) {
+      console.error('Error fetching user profile:', profileCheckError)
       return NextResponse.json(
         { error: 'Error al verificar permisos' },
         { status: 500 }
       )
     }
 
-    const isAdmin = userRoles?.some(
-      (ur: { roles: { name: string }[] }) => ur.roles?.some((r) => r.name === 'admin')
-    )
+    // Check if user is sysadmin
+    const isSysAdmin = currentUserProfile?.is_sysadmin === true
 
-    if (!isAdmin) {
+    // If not sysadmin, check if user has ANY role (not just admin)
+    let hasAnyRole = false
+    if (!isSysAdmin) {
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role_id')
+        .eq('user_id', user.id)
+        .eq('enabled', true)
+        .limit(1)
+
+      if (rolesError) {
+        console.error('Error fetching user roles:', rolesError)
+        return NextResponse.json(
+          { error: 'Error al verificar permisos' },
+          { status: 500 }
+        )
+      }
+
+      hasAnyRole = (userRoles?.length ?? 0) > 0
+    }
+
+    if (!isSysAdmin && !hasAnyRole) {
       return NextResponse.json(
-        { error: 'Requiere permisos de administrador' },
+        { error: 'Requiere permisos: debe ser sysadmin o tener al menos un rol asignado' },
         { status: 403 }
       )
     }
 
-    // 3. Verify admin profile exists and get tenant_id
+    // 3. Verify admin profile exists
     const { data: adminProfile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('id, email, tenant_id')
+      .from('profiles')
+      .select('id, email')
       .eq('id', user.id)
       .single()
 
@@ -85,7 +105,7 @@ export async function POST(request: Request) {
 
     // 4. Parse and validate request body
     const body: CreateUserRequest = await request.json()
-    const { email, fullName, roleId } = body
+    const { email, fullName, isSysAdmin: isSysAdminUser = false } = body
 
     if (!email || !fullName) {
       return NextResponse.json(
@@ -97,27 +117,7 @@ export async function POST(request: Request) {
     // 5. Create admin client for privileged operations
     const adminClient = createAdminClient()
 
-    // 6. Get default role (vendedor) if not specified
-    let finalRoleId = roleId
-    if (!finalRoleId) {
-      const { data: vendedorRole, error: roleError } = await adminClient
-        .from('roles')
-        .select('id')
-        .eq('name', 'vendedor')
-        .single()
-
-      if (roleError || !vendedorRole) {
-        console.error('Error fetching vendedor role:', roleError)
-        return NextResponse.json(
-          { error: 'Error al obtener rol por defecto' },
-          { status: 500 }
-        )
-      }
-
-      finalRoleId = vendedorRole.id
-    }
-
-    // 7. Create auth.users entry with auto-confirmation
+    // 6. Create auth.users entry with auto-confirmation
     const { data: authUser, error: authError } =
       await adminClient.auth.admin.createUser({
         email,
@@ -152,20 +152,33 @@ export async function POST(request: Request) {
       )
     }
 
-    // 8. Create user_profiles entry
-    const { error: profileInsertError } = await adminClient
-      .from('user_profiles')
+    // 7. Create profiles entry with is_sysadmin flag using RLS
+    // Always assign creator to track who created the user
+    // Now using regular client with RLS instead of admin client
+    const creatorValue = user.id
+    console.log('🔍 DEBUG Creator assignment:', {
+      currentUserEmail: adminProfile.email,
+      currentUserId: user.id,
+      isSysAdmin,
+      creatorValue,
+      newUserEmail: email,
+      newUserIsSysAdmin: isSysAdminUser
+    })
+
+    const { error: profileInsertError } = await supabase
+      .from('profiles')
       .insert({
         id: authUser.user.id,
-        tenant_id: adminProfile.tenant_id,
         email,
-        full_name: fullName,
+        fullName: fullName,
+        is_sysadmin: isSysAdminUser,
+        creator: creatorValue,
       })
 
     if (profileInsertError) {
       console.error('Error creating profile:', profileInsertError)
 
-      // Rollback: Delete auth user
+      // Rollback: Delete auth user using admin API (required)
       await adminClient.auth.admin.deleteUser(authUser.user.id)
 
       return NextResponse.json(
@@ -174,28 +187,17 @@ export async function POST(request: Request) {
       )
     }
 
-    // 9. Assign role in user_roles
-    const { error: roleAssignError } = await adminClient
-      .from('user_roles')
-      .insert({
-        user_id: authUser.user.id,
-        role_id: finalRoleId,
-        key: `user_role_${authUser.user.id}_${finalRoleId}`,
-      })
+    // Verify that profile was created with correct creator value
+    const { data: verifyProfile } = await supabase
+      .from('profiles')
+      .select('id, email, creator')
+      .eq('id', authUser.user.id)
+      .single()
 
-    if (roleAssignError) {
-      console.error('Error assigning role:', roleAssignError)
+    console.log('✅ Profile created successfully:', verifyProfile)
 
-      // Rollback: Delete auth user (CASCADE will delete profile)
-      await adminClient.auth.admin.deleteUser(authUser.user.id)
-
-      return NextResponse.json(
-        { error: 'Error al asignar rol al usuario' },
-        { status: 500 }
-      )
-    }
-
-    // 10. Success response
+    // 8. Success response
+    // Roles will be assigned later via the role management modal
     return NextResponse.json({
       id: authUser.user.id,
       email,

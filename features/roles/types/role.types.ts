@@ -3,6 +3,7 @@ export interface Role {
   name: string
   description: string
   created_at: string
+  hrchy?: number | null
   // Legacy fields for compatibility
   created?: string
   key?: string
@@ -19,9 +20,11 @@ export interface Role {
 export interface CreateRoleInput {
   name: string
   description: string
+  hrchy?: number | null
 }
 
 export interface UpdateRoleInput {
   name?: string
   description?: string
+  hrchy?: number | null
 }

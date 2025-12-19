@@ -23,7 +23,8 @@ export const roleService = {
       .insert([{
         key: input.name.toLowerCase().replace(/\s+/g, '-'),
         name: input.name,
-        description: input.description
+        description: input.description,
+        hrchy: input.hrchy
       }])
       .select()
       .single()
@@ -43,6 +44,9 @@ export const roleService = {
     }
     if (input.description) {
       updateData.description = input.description
+    }
+    if (input.hrchy !== undefined) {
+      updateData.hrchy = input.hrchy
     }
 
     const { data, error } = await supabase

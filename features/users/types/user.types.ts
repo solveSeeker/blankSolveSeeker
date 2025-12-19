@@ -5,7 +5,6 @@ export interface Profile {
   role: string
   is_active: boolean
   created_at: string
-  updated_at: string
 }
 
 // Extended profile with user data from auth.users

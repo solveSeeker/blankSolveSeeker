@@ -23,7 +23,6 @@ export interface Database {
           welcome_message: string | null
           terms_and_conditions: string | null
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
@@ -38,7 +37,6 @@ export interface Database {
           welcome_message?: string | null
           terms_and_conditions?: string | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
@@ -53,7 +51,6 @@ export interface Database {
           welcome_message?: string | null
           terms_and_conditions?: string | null
           created_at?: string
-          updated_at?: string
         }
       }
       user_profiles: {
@@ -64,7 +61,6 @@ export interface Database {
           full_name: string
           avatar_url: string | null
           created_at: string
-          updated_at: string
         }
         Insert: {
           id: string
@@ -73,7 +69,6 @@ export interface Database {
           full_name: string
           avatar_url?: string | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
@@ -82,7 +77,6 @@ export interface Database {
           full_name?: string
           avatar_url?: string | null
           created_at?: string
-          updated_at?: string
         }
       }
       roles: {

@@ -5,14 +5,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { createClient } from '@/shared/lib/supabase/client'
 import { type Profile } from '@/features/users/hooks/useProfiles'
-
-interface Role {
-  id: string
-  name: string
-  description: string
-}
+import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
 
 interface UserDialogProps {
   open: boolean
@@ -22,32 +18,12 @@ interface UserDialogProps {
 }
 
 export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProps) {
+  const { isSysAdmin } = useCurrentUserProfile()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [selectedRoleId, setSelectedRoleId] = useState('')
-  const [roles, setRoles] = useState<Role[]>([])
+  const [isSysAdminUser, setIsSysAdminUser] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Cargar roles disponibles cuando el dialog se abre
-  useEffect(() => {
-    if (open && !user) {
-      // Solo cargar roles al crear un nuevo usuario
-      fetch('/api/roles')
-        .then((res) => res.json())
-        .then((data) => {
-          setRoles(data)
-          // Seleccionar 'vendedor' por defecto
-          const vendedorRole = data.find((r: Role) => r.name === 'vendedor')
-          if (vendedorRole) {
-            setSelectedRoleId(vendedorRole.id)
-          }
-        })
-        .catch((err) => {
-          console.error('Error loading roles:', err)
-        })
-    }
-  }, [open, user])
 
   useEffect(() => {
     if (user) {
@@ -56,6 +32,7 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
     } else {
       setFullName('')
       setEmail('')
+      setIsSysAdminUser(false)
     }
     setError(null)
   }, [user, open])
@@ -70,15 +47,15 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
         // Update existing user - solo actualizar perfil
         const supabase = createClient()
         const { error: updateError } = await supabase
-          .from('user_profiles')
+          .from('profiles')
           .update({
-            full_name: fullName,
+            fullName: fullName,
           })
           .eq('id', user.id)
 
         if (updateError) throw updateError
       } else {
-        // Create new user - usar API route que crea auth.users + perfil + rol
+        // Create new user - usar API route que crea auth.users + perfil
         const response = await fetch('/api/admin/users', {
           method: 'POST',
           headers: {
@@ -87,7 +64,7 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
           body: JSON.stringify({
             email,
             fullName,
-            roleId: selectedRoleId,
+            isSysAdmin: isSysAdminUser,
           }),
         })
 
@@ -150,26 +127,16 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
             </div>
           )}
 
-          {!user && (
-            <div className="space-y-2">
-              <Label htmlFor="role">Rol</Label>
-              <select
-                id="role"
-                value={selectedRoleId}
-                onChange={(e) => setSelectedRoleId(e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                required
-              >
-                {roles.length === 0 ? (
-                  <option value="">Cargando roles...</option>
-                ) : (
-                  roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
-                    </option>
-                  ))
-                )}
-              </select>
+          {!user && isSysAdmin && (
+            <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => setIsSysAdminUser(!isSysAdminUser)}>
+              <Checkbox
+                id="isSysAdmin"
+                checked={isSysAdminUser}
+                onCheckedChange={(checked) => setIsSysAdminUser(checked === true)}
+              />
+              <label htmlFor="isSysAdmin" className="cursor-pointer text-sm font-medium">
+                Este usuario es SysAdmin
+              </label>
             </div>
           )}
 

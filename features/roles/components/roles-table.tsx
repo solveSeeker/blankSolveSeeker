@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from 'react'
 import { useRoles } from '@/features/roles/hooks'
+import { useProfiles } from '@/features/users/hooks/useProfiles'
+import { useUserRoles } from '@/features/users/hooks/useUserRoles'
 import { roleService } from '@/features/roles/services'
 import { Role } from '@/features/roles/types'
 import {
@@ -15,18 +17,28 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import { RoleDialog } from './role-dialog'
 import { DeleteRoleDialog } from './delete-role-dialog'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, Users } from 'lucide-react'
 
 export function RolesTable() {
   const { roles, isLoading, refetch } = useRoles()
+  const { profiles } = useProfiles()
+  const { userRoles } = useUserRoles()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Helper function to count active users for a role
+  const getActiveUserCountForRole = (roleId: string): number => {
+    return userRoles.filter(
+      (ur) => ur.role_id === roleId && ur.visible === true && ur.enabled === true
+    ).length
+  }
 
   const filteredRoles = roles.filter(role =>
     role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,6 +127,8 @@ export function RolesTable() {
               <TableRow className="hover:bg-gray-900 h-12">
                 <TableHead className="text-white">Nombre</TableHead>
                 <TableHead className="text-white">Descripción</TableHead>
+                <TableHead className="text-white">Jerarquía</TableHead>
+                <TableHead className="text-white">Usuarios</TableHead>
                 <TableHead className="text-white">Fecha Creación</TableHead>
                 <TableHead className="text-right text-white">Acciones</TableHead>
               </TableRow>
@@ -124,6 +138,19 @@ export function RolesTable() {
                 <TableRow key={role.id} className={`h-12 border-0 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
                   <TableCell className="font-medium">{role.name}</TableCell>
                   <TableCell className="text-gray-600">{role.description}</TableCell>
+                  <TableCell className="text-center">
+                    {role.hrchy !== null && role.hrchy !== undefined ? (
+                      <span className="font-medium">{role.hrchy}</span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium">{getActiveUserCountForRole(role.id)}</span>
+                    </div>
+                  </TableCell>
                   <TableCell className="text-sm text-gray-500">
                     {new Date(role.created_at || role.created || '').toLocaleDateString('es-ES')}
                   </TableCell>

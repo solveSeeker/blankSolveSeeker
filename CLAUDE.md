@@ -103,6 +103,59 @@ shared/                       # Código reutilizable
 
 **¿Por qué?** Esta separación permite que las features sean **completamente portables** y **reutilizables** en diferentes rutas sin duplicar código.
 
+#### Patrón de Headers en Módulos del Dashboard
+
+**🎯 Regla Importante**: Los headers de los módulos del dashboard se definen en `app/dashboard/layout.tsx`, NO en los componentes individuales.
+
+**Estructura correcta**:
+1. **Layout del Dashboard** (`app/dashboard/layout.tsx`):
+   - Define el header con icono, título y descripción para cada ruta
+   - Usa `usePathname()` para detectar la ruta actual
+   - Renderiza el header en la barra superior del main content
+
+2. **Componentes de Features** (ej: `features/users/components/users-table.tsx`):
+   - NO incluyen header propio
+   - Solo contienen la funcionalidad específica (búsqueda, tabla, acciones)
+
+**Ejemplo de implementación en layout.tsx**:
+```typescript
+const getPageInfo = () => {
+  if (pathname.includes('/users')) {
+    return {
+      title: 'Usuarios',
+      description: 'Gestiona los usuarios y sus roles en el sistema',
+      icon: <UserCog className="w-5 h-5" />
+    }
+  }
+  if (pathname.includes('/audit')) {
+    return {
+      title: 'Auditoría',
+      description: 'Registro de cambios en el sistema',
+      icon: <ScrollText className="w-5 h-5" />
+    }
+  }
+  // ...más módulos
+}
+
+// Renderizado del header:
+<div className="flex items-center h-16 px-8 border-b border-gray-200 bg-white">
+  {pageInfo.title && (
+    <div className="flex items-center gap-3">
+      {pageInfo.icon && <div className="text-gray-700">{pageInfo.icon}</div>}
+      <h1 className="text-lg font-semibold text-gray-900">{pageInfo.title}</h1>
+      {pageInfo.description && (
+        <>
+          <span className="text-gray-400">-</span>
+          <p className="text-sm text-gray-600">{pageInfo.description}</p>
+        </>
+      )}
+    </div>
+  )}
+</div>
+```
+
+**¿Por qué?**: Esto mantiene la consistencia visual entre todos los módulos y centraliza la configuración de headers en un solo lugar. Evita duplicación de código y facilita cambios futuros.
+
 ### Estructura de Proyecto Completa
 ```
 proyecto/
@@ -194,6 +247,25 @@ Interactúa con PostgreSQL sin CLI ni migraciones manuales.
 - **Constants**: `UPPER_SNAKE_CASE`
 - **Files**: `kebab-case.extension`
 - **Folders**: `kebab-case`
+
+### UI/UX Standards
+
+#### Diálogos (Modals)
+**🎯 Regla Importante**: Todos los diálogos deben tener fondo blanco.
+
+```typescript
+// ✅ CORRECTO
+<DialogContent className="sm:max-w-md bg-white">
+  {/* contenido del diálogo */}
+</DialogContent>
+
+// ❌ INCORRECTO - sin bg-white
+<DialogContent className="sm:max-w-md">
+  {/* contenido del diálogo */}
+</DialogContent>
+```
+
+**¿Por qué?**: Mantiene consistencia visual en toda la aplicación y mejora la legibilidad del contenido.
 
 ### TypeScript Guidelines
 - **Siempre usar type hints** para function signatures

@@ -8,6 +8,9 @@ export interface CurrentUserProfile {
   email: string
   fullName: string | null
   is_sysadmin: boolean
+  avatarUrl: string | null
+  createdAt: string | null
+  updatedAt: string | null
 }
 
 const GET_CURRENT_USER_PROFILE_QUERY = gql`
@@ -19,6 +22,8 @@ const GET_CURRENT_USER_PROFILE_QUERY = gql`
           email
           fullName
           is_sysadmin
+          avatarURL
+          created_at
         }
       }
     }
@@ -61,8 +66,18 @@ export function useCurrentUserProfile() {
         { userId: user.id }
       )
 
-      const userProfile = data.profilesCollection.edges[0]?.node
-      if (userProfile) {
+      const rawProfile = data.profilesCollection.edges[0]?.node
+      if (rawProfile) {
+        // Map snake_case fields to camelCase
+        const userProfile: CurrentUserProfile = {
+          id: rawProfile.id,
+          email: rawProfile.email,
+          fullName: rawProfile.fullName,
+          is_sysadmin: rawProfile.is_sysadmin,
+          avatarUrl: (rawProfile as any).avatarURL,
+          createdAt: (rawProfile as any).created_at,
+          updatedAt: (rawProfile as any).created_at, // Using created_at for now since updated_at doesn't exist
+        }
         setProfile(userProfile)
         setError(null)
       } else {

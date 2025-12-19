@@ -6,6 +6,8 @@ export interface UserRole {
   user_id: string
   role_id: string
   role_name?: string
+  visible?: boolean
+  enabled?: boolean
 }
 
 const GET_USER_ROLES_QUERY = gql`
@@ -15,6 +17,8 @@ const GET_USER_ROLES_QUERY = gql`
         node {
           user_id
           role_id
+          enabled
+          visible
           roles {
             name
           }
@@ -30,6 +34,8 @@ interface UserRolesResponse {
       node: {
         user_id: string
         role_id: string
+        enabled: boolean
+        visible: boolean
         roles: {
           name: string
         } | null
@@ -58,6 +64,8 @@ export function useUserRoles() {
         user_id: edge.node.user_id,
         role_id: edge.node.role_id,
         role_name: edge.node.roles?.name || 'unknown',
+        visible: edge.node.visible,
+        enabled: edge.node.enabled,
       }))
 
       setUserRoles(mappedData)

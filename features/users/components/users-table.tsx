@@ -7,24 +7,36 @@ import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProf
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Empty } from '@/components/ui/empty'
 import { UserDialog } from './user-dialog'
 import { DeleteUserDialog } from './delete-user-dialog'
-import { Plus, Search } from 'lucide-react'
+import { ManageUserRolesDialog } from './manage-user-roles-dialog'
+import { ChangePasswordDialog } from './change-password-dialog'
+import { Plus, Search, UserCog, Shield, Check, X, KeyRound } from 'lucide-react'
 
 export function UsersTable() {
   const { profiles, isLoading, error, refetch } = useProfiles()
-  const { getRolesForUser, isLoading: rolesLoading } = useUserRoles()
+  const { getRolesForUser, userRoles, isLoading: rolesLoading, refetch: refetchRoles } = useUserRoles()
   const { isSysAdmin, isLoading: currentUserLoading } = useCurrentUserProfile()
+
+  // Helper function to count active roles for a user
+  const getActiveRolesCount = (userId: string, isSysAdmin?: boolean): number => {
+    if (isSysAdmin) return 0 // SysAdmin users don't have countable roles
+    return userRoles.filter(
+      (ur) => ur.user_id === userId && ur.visible === true && ur.enabled === true
+    ).length
+  }
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredProfiles, setFilteredProfiles] = useState(profiles || [])
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isManageRolesDialogOpen, setIsManageRolesDialogOpen] = useState(false)
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
 
   useEffect(() => {
     if (profiles) {
@@ -66,6 +78,48 @@ export function UsersTable() {
     refetch()
   }
 
+  const handleManageRoles = (user: Profile) => {
+    setSelectedUser(user)
+    setIsManageRolesDialogOpen(true)
+  }
+
+  const handleRolesUpdated = () => {
+    setIsManageRolesDialogOpen(false)
+    setSelectedUser(null)
+    refetch()
+    refetchRoles()
+  }
+
+  const handleChangePassword = (user: Profile) => {
+    setSelectedUser(user)
+    setIsChangePasswordDialogOpen(true)
+  }
+
+  const handleToggleActive = async (userId: string, currentIsActive: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_active: !currentIsActive,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Error al actualizar usuario')
+      }
+
+      // Refetch to update the UI
+      refetch()
+    } catch (error) {
+      console.error('Error toggling user active status:', error)
+      // TODO: Show error toast/notification to user
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Search */}
@@ -105,7 +159,8 @@ export function UsersTable() {
               <TableRow className="hover:bg-gray-900 h-12">
                 <TableHead className="text-white">Usuario</TableHead>
                 <TableHead className="text-white">Email</TableHead>
-                <TableHead className="text-white">Rol</TableHead>
+                <TableHead className="text-white">Roles</TableHead>
+                <TableHead className="text-white">Estado</TableHead>
                 <TableHead className="text-right text-white">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -115,9 +170,13 @@ export function UsersTable() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarFallback>
-                          {profile.fullName?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
+                        {profile.avatarURL ? (
+                          <AvatarImage src={profile.avatarURL} alt={profile.fullName || 'User'} />
+                        ) : (
+                          <AvatarFallback className="bg-gray-100">
+                            <UserCog className="h-4 w-4 text-black" />
+                          </AvatarFallback>
+                        )}
                       </Avatar>
                       <span className="font-medium">{profile.fullName || 'Sin nombre'}</span>
                     </div>
@@ -126,23 +185,52 @@ export function UsersTable() {
                     {profile.email}
                   </TableCell>
                   <TableCell>
-                    {getRolesForUser(profile.id, profile.is_sysadmin).map((roleName, idx) => (
-                      <Badge key={idx} variant="outline" className="mr-1">
-                        {roleName}
+                    {profile.is_sysadmin ? (
+                      <Badge variant="outline" className="mr-1">
+                        SysAdmin
                       </Badge>
-                    ))}
-                    {getRolesForUser(profile.id, profile.is_sysadmin).length === 0 && (
-                      <Badge variant="outline" className="text-gray-400">
-                        Sin rol
-                      </Badge>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{getActiveRolesCount(profile.id, profile.is_sysadmin)}</span>
+                        <button
+                          onClick={() => handleManageRoles(profile)}
+                          className="ml-1 hover:opacity-70 transition-opacity"
+                          title="Gestionar roles"
+                        >
+                          <Shield className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        </button>
+                      </div>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleToggleActive(profile.id, profile.is_active)}
+                      className="hover:opacity-70 transition-opacity"
+                      title={profile.is_active ? 'Click para desactivar' : 'Click para activar'}
+                    >
+                      {profile.is_active ? (
+                        <Check className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <X className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => handleChangePassword(profile)}
+                      className="h-8 w-8"
+                      title="Cambiar contraseña"
+                    >
+                      <KeyRound className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleEditUser(profile)}
                       className="h-8 w-8"
+                      title="Editar usuario"
                     >
                       <svg
                         className="h-5 w-5"
@@ -158,26 +246,30 @@ export function UsersTable() {
                         />
                       </svg>
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteUser(profile)}
-                      className="h-8 w-8"
-                    >
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    {/* Hide delete button for protected user */}
+                    {profile.email !== 'solve.seeker.dev@gmail.com' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteUser(profile)}
+                        className="h-8 w-8"
+                        title="Eliminar usuario"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </Button>
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -205,6 +297,19 @@ export function UsersTable() {
         onOpenChange={setIsDeleteDialogOpen}
         user={selectedUser}
         onDeleted={handleUserDeleted}
+      />
+
+      <ManageUserRolesDialog
+        open={isManageRolesDialogOpen}
+        onOpenChange={setIsManageRolesDialogOpen}
+        user={selectedUser}
+        onRolesUpdated={handleRolesUpdated}
+      />
+
+      <ChangePasswordDialog
+        open={isChangePasswordDialogOpen}
+        onOpenChange={setIsChangePasswordDialogOpen}
+        user={selectedUser}
       />
     </div>
   )

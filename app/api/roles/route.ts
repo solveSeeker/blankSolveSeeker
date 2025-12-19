@@ -8,7 +8,8 @@ export async function GET() {
     const { data, error } = await supabase
       .from('roles')
       .select('*')
-      .order('created', { ascending: false })
+      .order('hrchy', { ascending: true, nullsFirst: false })
+      .order('name', { ascending: true })
 
     if (error) {
       return NextResponse.json(

@@ -10,7 +10,6 @@ export interface Profile {
   is_active: boolean
   is_sysadmin: boolean
   created_at: string
-  updated_at: string
 }
 
 const GET_PROFILES_QUERY = gql`
@@ -25,7 +24,6 @@ const GET_PROFILES_QUERY = gql`
           is_active
           is_sysadmin
           created_at
-          updated_at
         }
       }
     }
