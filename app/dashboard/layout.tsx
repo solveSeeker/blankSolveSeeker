@@ -1,10 +1,11 @@
 'use client'
 
+import { Suspense } from 'react'
 import Sidebar from '@/shared/components/Sidebar'
 import { usePathname } from 'next/navigation'
 import { UserCog, Shield, Building2, ScrollText, Settings } from 'lucide-react'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   // Determinar el título y descripción según la ruta
@@ -98,5 +99,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {children}
       </main>
     </div>
+  )
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent>{children}</DashboardContent>
+    </Suspense>
   )
 }
