@@ -267,6 +267,43 @@ Interactúa con PostgreSQL sin CLI ni migraciones manuales.
 
 **¿Por qué?**: Mantiene consistencia visual en toda la aplicación y mejora la legibilidad del contenido.
 
+#### Inputs (Campos de Texto)
+**🎯 Estándar de Proyecto**: Todos los inputs tienen bordes claros y cambian a oscuro al tener foco.
+
+El componente base `Input` (`components/ui/input.tsx`) ya está configurado con estos estilos:
+
+```typescript
+// Estilos por defecto en todos los inputs:
+- border-gray-200           // Borde gris claro sin foco
+- focus-visible:border-gray-900  // Borde gris oscuro/negro con foco
+- focus-visible:ring-0      // Sin anillo de enfoque (solo borde)
+```
+
+**NO es necesario agregar estas clases manualmente** - todos los componentes `<Input />` las heredan automáticamente.
+
+```typescript
+// ✅ CORRECTO - usa el componente sin clases adicionales
+<Input
+  id="fullName"
+  type="text"
+  value={fullName}
+  onChange={(e) => setFullName(e.target.value)}
+  placeholder="Tu nombre completo"
+/>
+
+// ❌ INNECESARIO - no repitas las clases del componente base
+<Input
+  className="border-gray-200 focus-visible:border-gray-900"
+  // ...props
+/>
+```
+
+**¿Por qué?**:
+- Mantiene consistencia visual en todos los formularios
+- Mejora la accesibilidad al indicar claramente qué campo está activo
+- Centraliza el estilo en un solo lugar para facilitar cambios futuros
+- Evita duplicación de código en cada uso de Input
+
 ### TypeScript Guidelines
 - **Siempre usar type hints** para function signatures
 - **Interfaces** para object shapes

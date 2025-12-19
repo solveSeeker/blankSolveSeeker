@@ -246,8 +246,8 @@ export function UsersTable() {
                         />
                       </svg>
                     </Button>
-                    {/* Hide delete button for protected user */}
-                    {profile.email !== 'solve.seeker.dev@gmail.com' && (
+                    {/* Only sysAdmin can delete users */}
+                    {isSysAdmin && (
                       <Button
                         variant="ghost"
                         size="icon"

@@ -66,3 +66,5 @@ supabase/.temp
 
 # Bitácora (documentos de trabajo)
 bitacora/
+
+.vercel
