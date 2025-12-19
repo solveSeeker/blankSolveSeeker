@@ -72,7 +72,7 @@ export default function Sidebar() {
       {/* Dashboard Header */}
       <div className="flex items-center gap-3 h-16 px-6 border-b border-gray-200">
         <img
-          src="/isotipo.webp"
+          src="/Isotipo.webp"
           alt="Solve Seeker"
           className="h-8 w-auto"
         />
