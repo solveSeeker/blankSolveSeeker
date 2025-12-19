@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { useRoles } from '@/features/roles/hooks'
 import { useProfiles } from '@/features/users/hooks/useProfiles'
 import { useUserRoles } from '@/features/users/hooks/useUserRoles'
+import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
 import { roleService } from '@/features/roles/services'
 import { Role } from '@/features/roles/types'
 import {
@@ -20,18 +21,23 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { RoleDialog } from './role-dialog'
 import { DeleteRoleDialog } from './delete-role-dialog'
-import { Plus, Search, Users } from 'lucide-react'
+import { HideRoleDialog } from './hide-role-dialog'
+import { Plus, Search, Users, Eye, EyeOff, Check, X } from 'lucide-react'
 
 export function RolesTable() {
   const { roles, isLoading, refetch } = useRoles()
   const { profiles } = useProfiles()
   const { userRoles } = useUserRoles()
+  const { isSysAdmin } = useCurrentUserProfile()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isHideDialogOpen, setIsHideDialogOpen] = useState(false)
+  const [isHiding, setIsHiding] = useState(false)
+  const [isToggling, setIsToggling] = useState(false)
 
   // Helper function to count active users for a role
   const getActiveUserCountForRole = (roleId: string): number => {
@@ -87,6 +93,59 @@ export function RolesTable() {
     setSelectedRole(null)
   }, [refetch])
 
+  const handleToggleVisible = useCallback(async (role: Role) => {
+    if (!isSysAdmin) return
+
+    try {
+      setIsToggling(true)
+      await roleService.updateVisibility(role.id, !role.visible)
+      await refetch()
+    } catch (error) {
+      console.error('Error toggling visible:', error)
+    } finally {
+      setIsToggling(false)
+    }
+  }, [isSysAdmin, refetch])
+
+  const handleToggleEnabled = useCallback(async (role: Role) => {
+    try {
+      setIsToggling(true)
+      await roleService.updateEnabled(role.id, !role.enabled)
+      await refetch()
+    } catch (error) {
+      console.error('Error toggling enabled:', error)
+    } finally {
+      setIsToggling(false)
+    }
+  }, [refetch])
+
+  const handleVisibilityButtonClick = useCallback((role: Role) => {
+    if (isSysAdmin) {
+      // SysAdmin: Toggle inmediato sin confirmación
+      handleToggleVisible(role)
+    } else {
+      // Usuario común: Abrir diálogo de confirmación
+      setSelectedRole(role)
+      setIsHideDialogOpen(true)
+    }
+  }, [isSysAdmin, handleToggleVisible])
+
+  const handleHideConfirm = useCallback(async () => {
+    if (!selectedRole) return
+
+    try {
+      setIsHiding(true)
+      await roleService.hideRole(selectedRole.id)
+      await refetch()
+      setIsHideDialogOpen(false)
+      setSelectedRole(null)
+    } catch (error) {
+      console.error('Error hiding role:', error)
+    } finally {
+      setIsHiding(false)
+    }
+  }, [selectedRole, refetch])
+
   if (isLoading) {
     return (
       <div className="space-y-4 p-6">
@@ -129,6 +188,7 @@ export function RolesTable() {
                 <TableHead className="text-white">Descripción</TableHead>
                 <TableHead className="text-white">Jerarquía</TableHead>
                 <TableHead className="text-white">Usuarios</TableHead>
+                <TableHead className="text-white">Estado</TableHead>
                 <TableHead className="text-white">Fecha Creación</TableHead>
                 <TableHead className="text-right text-white">Acciones</TableHead>
               </TableRow>
@@ -151,6 +211,20 @@ export function RolesTable() {
                       <span className="font-medium">{getActiveUserCountForRole(role.id)}</span>
                     </div>
                   </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleToggleEnabled(role)}
+                      disabled={isToggling}
+                      className="hover:opacity-70 transition-opacity"
+                      title={role.enabled ? 'Activo' : 'Inactivo'}
+                    >
+                      {role.enabled ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <X className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </TableCell>
                   <TableCell className="text-sm text-gray-500">
                     {new Date(role.created_at || role.created || '').toLocaleDateString('es-ES')}
                   </TableCell>
@@ -160,6 +234,7 @@ export function RolesTable() {
                       size="icon"
                       onClick={() => handleEditClick(role)}
                       className="h-8 w-8"
+                      title="Editar"
                     >
                       <svg
                         className="h-5 w-5"
@@ -178,23 +253,55 @@ export function RolesTable() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDeleteClick(role)}
+                      onClick={() => handleVisibilityButtonClick(role)}
                       className="h-8 w-8"
+                      title={isSysAdmin ? (role.visible ? 'Ocultar' : 'Mostrar') : 'Ocultar'}
                     >
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
+                      {isSysAdmin ? (
+                        role.visible ? (
+                          <Eye className="h-5 w-5" />
+                        ) : (
+                          <EyeOff className="h-5 w-5" />
+                        )
+                      ) : (
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      )}
                     </Button>
+                    {isSysAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteClick(role)}
+                        className="h-8 w-8"
+                        title="Eliminar"
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -223,6 +330,14 @@ export function RolesTable() {
         role={selectedRole}
         isDeleting={isDeleting}
         onConfirm={handleDeleteConfirm}
+      />
+
+      <HideRoleDialog
+        isOpen={isHideDialogOpen}
+        onOpenChange={setIsHideDialogOpen}
+        role={selectedRole}
+        isHiding={isHiding}
+        onConfirm={handleHideConfirm}
       />
     </div>
   )

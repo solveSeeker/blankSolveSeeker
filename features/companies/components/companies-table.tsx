@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useCompanies } from '../hooks'
+import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
+import { companyService } from '../services'
 import type { Company } from '../types'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
@@ -11,16 +13,21 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Empty } from '@/components/ui/empty'
 import { CompanyDialog } from './company-dialog'
 import { DeleteCompanyDialog } from './delete-company-dialog'
+import { HideCompanyDialog } from './hide-company-dialog'
 import { Plus, Search, Building2, Eye, EyeOff, Check, X } from 'lucide-react'
 
 export function CompaniesTable() {
   const { companies, isLoading, error, refetch } = useCompanies()
+  const { isSysAdmin } = useCurrentUserProfile()
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredCompanies, setFilteredCompanies] = useState(companies || [])
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isHideDialogOpen, setIsHideDialogOpen] = useState(false)
+  const [isHiding, setIsHiding] = useState(false)
+  const [isToggling, setIsToggling] = useState(false)
 
   useEffect(() => {
     if (companies) {
@@ -56,32 +63,55 @@ export function CompaniesTable() {
   }
 
   const handleToggleVisible = async (company: Company) => {
-    try {
-      const supabase = (await import('@/shared/lib/supabase/client')).createClient()
-      const { error } = await supabase
-        .from('companies')
-        .update({ visible: !company.visible })
-        .eq('id', company.id)
+    if (!isSysAdmin) return
 
-      if (error) throw error
+    try {
+      setIsToggling(true)
+      await companyService.updateVisibility(company.id, !company.visible)
       refetch()
     } catch (err) {
       console.error('Error al cambiar visibilidad:', err)
+    } finally {
+      setIsToggling(false)
     }
   }
 
   const handleToggleEnabled = async (company: Company) => {
     try {
-      const supabase = (await import('@/shared/lib/supabase/client')).createClient()
-      const { error } = await supabase
-        .from('companies')
-        .update({ enabled: !company.enabled })
-        .eq('id', company.id)
-
-      if (error) throw error
+      setIsToggling(true)
+      await companyService.updateEnabled(company.id, !company.enabled)
       refetch()
     } catch (err) {
       console.error('Error al cambiar estado activo:', err)
+    } finally {
+      setIsToggling(false)
+    }
+  }
+
+  const handleVisibilityButtonClick = (company: Company) => {
+    if (isSysAdmin) {
+      // SysAdmin: Toggle inmediato sin confirmación
+      handleToggleVisible(company)
+    } else {
+      // Usuario común: Abrir diálogo de confirmación
+      setSelectedCompany(company)
+      setIsHideDialogOpen(true)
+    }
+  }
+
+  const handleHideConfirm = async () => {
+    if (!selectedCompany) return
+
+    try {
+      setIsHiding(true)
+      await companyService.hideCompany(selectedCompany.id)
+      refetch()
+      setIsHideDialogOpen(false)
+      setSelectedCompany(null)
+    } catch (error) {
+      console.error('Error hiding company:', error)
+    } finally {
+      setIsHiding(false)
     }
   }
 
@@ -167,30 +197,18 @@ export function CompaniesTable() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2 items-center">
-                      <button
-                        onClick={() => handleToggleVisible(company)}
-                        className="hover:opacity-70 transition-opacity"
-                        title={company.visible ? "Click para ocultar" : "Click para hacer visible"}
-                      >
-                        {company.visible ? (
-                          <Eye className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <EyeOff className="h-5 w-5 text-gray-400" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleToggleEnabled(company)}
-                        className="hover:opacity-70 transition-opacity"
-                        title={company.enabled ? "Click para desactivar" : "Click para activar"}
-                      >
-                        {company.enabled ? (
-                          <Check className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <X className="h-5 w-5 text-gray-400" />
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleToggleEnabled(company)}
+                      disabled={isToggling}
+                      className="hover:opacity-70 transition-opacity"
+                      title={company.enabled ? "Activo" : "Inactivo"}
+                    >
+                      {company.enabled ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <X className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button
@@ -198,6 +216,7 @@ export function CompaniesTable() {
                       size="icon"
                       onClick={() => handleEditCompany(company)}
                       className="h-8 w-8"
+                      title="Editar"
                     >
                       <svg
                         className="h-5 w-5"
@@ -216,23 +235,55 @@ export function CompaniesTable() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDeleteCompany(company)}
+                      onClick={() => handleVisibilityButtonClick(company)}
                       className="h-8 w-8"
+                      title={isSysAdmin ? (company.visible ? 'Ocultar' : 'Mostrar') : 'Ocultar'}
                     >
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
+                      {isSysAdmin ? (
+                        company.visible ? (
+                          <Eye className="h-5 w-5" />
+                        ) : (
+                          <EyeOff className="h-5 w-5" />
+                        )
+                      ) : (
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      )}
                     </Button>
+                    {isSysAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteCompany(company)}
+                        className="h-8 w-8"
+                        title="Eliminar"
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -260,6 +311,14 @@ export function CompaniesTable() {
         onOpenChange={setIsDeleteDialogOpen}
         company={selectedCompany}
         onDeleted={handleCompanyDeleted}
+      />
+
+      <HideCompanyDialog
+        isOpen={isHideDialogOpen}
+        onOpenChange={setIsHideDialogOpen}
+        company={selectedCompany}
+        isHiding={isHiding}
+        onConfirm={handleHideConfirm}
       />
     </div>
   )

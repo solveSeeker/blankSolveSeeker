@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { useAuditLogs } from '@/features/audit/hooks/useAuditLogs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Empty } from '@/components/ui/empty'
-import { Search } from 'lucide-react'
+import { Search, Eye } from 'lucide-react'
 import { AuditDiffDialog } from './audit-diff-dialog'
 import type { AuditLog } from '../types/audit.types'
 
@@ -16,13 +17,20 @@ export function AuditLogsTable() {
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const filteredLogs = auditLogs.filter(log => {
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      log.nameTable?.toLowerCase().includes(searchLower) ||
-      log.userIdentifier?.toLowerCase().includes(searchLower)
-    )
-  })
+  const filteredLogs = auditLogs
+    .filter(log => {
+      const searchLower = searchTerm.toLowerCase()
+      return (
+        log.nameTable?.toLowerCase().includes(searchLower) ||
+        log.userIdentifier?.toLowerCase().includes(searchLower)
+      )
+    })
+    .sort((a, b) => {
+      // Ordenar por fecha descendente (más reciente primero)
+      const dateA = a.updated ? new Date(a.updated).getTime() : 0
+      const dateB = b.updated ? new Date(b.updated).getTime() : 0
+      return dateB - dateA
+    })
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-'
@@ -96,12 +104,15 @@ export function AuditLogsTable() {
                     {log.currentUser || '-'}
                   </TableCell>
                   <TableCell>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleViewDiff(log)}
-                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      className="h-8 w-8"
+                      title="Ver cambios"
                     >
-                      Ver cambios
-                    </button>
+                      <Eye className="h-5 w-5" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

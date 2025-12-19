@@ -72,5 +72,39 @@ export const roleService = {
     if (error) {
       throw error
     }
+  },
+
+  async updateVisibility(id: string, visible: boolean): Promise<Role> {
+    const { data, error } = await supabase
+      .from('roles')
+      .update({ visible })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data
+  },
+
+  async updateEnabled(id: string, enabled: boolean): Promise<Role> {
+    const { data, error } = await supabase
+      .from('roles')
+      .update({ enabled })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data
+  },
+
+  async hideRole(id: string): Promise<Role> {
+    return this.updateVisibility(id, false)
   }
 }

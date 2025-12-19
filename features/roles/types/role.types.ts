@@ -8,8 +8,8 @@ export interface Role {
   created?: string
   key?: string
   hashUpdate?: string
-  visible?: boolean
-  enabled?: boolean
+  visible: boolean
+  enabled: boolean
   updated?: string | null
   creator?: string | null
   updater?: string | null
@@ -27,4 +27,12 @@ export interface UpdateRoleInput {
   name?: string
   description?: string
   hrchy?: number | null
+}
+
+export interface UpdateRoleVisibilityInput {
+  visible: boolean
+}
+
+export interface UpdateRoleEnabledInput {
+  enabled: boolean
 }
