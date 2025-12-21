@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useCompanies } from '../hooks'
 import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
+import { useUserCompanies } from '@/features/users/hooks/useUserCompanies'
 import { companyService } from '../services'
 import type { Company } from '../types'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -14,10 +15,11 @@ import { Empty } from '@/components/ui/empty'
 import { CompanyDialog } from './company-dialog'
 import { DeleteCompanyDialog } from './delete-company-dialog'
 import { HideCompanyDialog } from './hide-company-dialog'
-import { Plus, Search, Building2, Eye, EyeOff, Check, X } from 'lucide-react'
+import { Plus, Search, Building2, Eye, EyeOff, Check, X, Users } from 'lucide-react'
 
 export function CompaniesTable() {
   const { companies, isLoading, error, refetch } = useCompanies()
+  const { userCompanies } = useUserCompanies()
   const { isSysAdmin } = useCurrentUserProfile()
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredCompanies, setFilteredCompanies] = useState(companies || [])
@@ -28,6 +30,13 @@ export function CompaniesTable() {
   const [isHideDialogOpen, setIsHideDialogOpen] = useState(false)
   const [isHiding, setIsHiding] = useState(false)
   const [isToggling, setIsToggling] = useState(false)
+
+  // Helper function to count active users for a company
+  const getActiveUserCountForCompany = (companyId: string): number => {
+    return userCompanies.filter(
+      (uc) => uc.company_id === companyId && uc.is_active === true
+    ).length
+  }
 
   useEffect(() => {
     if (companies) {
@@ -155,6 +164,7 @@ export function CompaniesTable() {
                 <TableHead className="text-white">Empresa</TableHead>
                 <TableHead className="text-white">Slug</TableHead>
                 <TableHead className="text-white">Colores</TableHead>
+                <TableHead className="text-white">Usuarios</TableHead>
                 <TableHead className="text-white">Estado</TableHead>
                 <TableHead className="text-right text-white">Acciones</TableHead>
               </TableRow>
@@ -194,6 +204,12 @@ export function CompaniesTable() {
                         style={{ backgroundColor: company.accent_color }}
                         title={`Accent: ${company.accent_color}`}
                       />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium">{getActiveUserCountForCompany(company.id)}</span>
                     </div>
                   </TableCell>
                   <TableCell>

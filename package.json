@@ -4,9 +4,9 @@
   "description": "Sistema de Gestión de Pedidos Multi-Tenant White-Label",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 4855",
+    "dev": "next dev -p 4914",
     "build": "next build",
-    "start": "next start -p 4855",
+    "start": "next start -p 4914",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "typecheck": "tsc --noEmit"
