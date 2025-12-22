@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useProfiles, type Profile } from '@/features/users/hooks/useProfiles'
 import { useUserRoles } from '@/features/users/hooks/useUserRoles'
+import { useUserCompanies } from '@/features/users/hooks/useUserCompanies'
 import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
@@ -13,13 +14,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Empty } from '@/components/ui/empty'
 import { UserDialog } from './user-dialog'
 import { DeleteUserDialog } from './delete-user-dialog'
+import { ManageUserCompaniesDialog } from './manage-user-companies-dialog'
 import { ManageUserRolesDialog } from './manage-user-roles-dialog'
 import { ChangePasswordDialog } from './change-password-dialog'
-import { Plus, Search, UserCog, Shield, Check, X, KeyRound } from 'lucide-react'
+import { Plus, Search, UserCog, Shield, Check, X, KeyRound, Building2 } from 'lucide-react'
 
 export function UsersTable() {
   const { profiles, isLoading, error, refetch } = useProfiles()
   const { getRolesForUser, userRoles, isLoading: rolesLoading, refetch: refetchRoles } = useUserRoles()
+  const { getActiveCompaniesCount, refetch: refetchCompanies } = useUserCompanies()
   const { isSysAdmin, isLoading: currentUserLoading } = useCurrentUserProfile()
 
   // Helper function to count active roles for a user
@@ -36,6 +39,7 @@ export function UsersTable() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isManageRolesDialogOpen, setIsManageRolesDialogOpen] = useState(false)
+  const [isManageCompaniesDialogOpen, setIsManageCompaniesDialogOpen] = useState(false)
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
 
   useEffect(() => {
@@ -88,6 +92,18 @@ export function UsersTable() {
     setSelectedUser(null)
     refetch()
     refetchRoles()
+  }
+
+  const handleManageCompanies = (user: Profile) => {
+    setSelectedUser(user)
+    setIsManageCompaniesDialogOpen(true)
+  }
+
+  const handleCompaniesUpdated = () => {
+    setIsManageCompaniesDialogOpen(false)
+    setSelectedUser(null)
+    refetch()
+    refetchCompanies()
   }
 
   const handleChangePassword = (user: Profile) => {
@@ -160,6 +176,7 @@ export function UsersTable() {
                 <TableHead className="text-white">Usuario</TableHead>
                 <TableHead className="text-white">Email</TableHead>
                 <TableHead className="text-white">Roles</TableHead>
+                <TableHead className="text-white">Empresas</TableHead>
                 <TableHead className="text-white">Estado</TableHead>
                 <TableHead className="text-right text-white">Acciones</TableHead>
               </TableRow>
@@ -201,6 +218,18 @@ export function UsersTable() {
                         </button>
                       </div>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{getActiveCompaniesCount(profile.id)}</span>
+                      <button
+                        onClick={() => handleManageCompanies(profile)}
+                        className="ml-1 hover:opacity-70 transition-opacity"
+                        title="Gestionar empresas"
+                      >
+                        <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      </button>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <button
@@ -246,7 +275,7 @@ export function UsersTable() {
                         />
                       </svg>
                     </Button>
-                    {/* Only sysAdmin can delete users */}
+                    {/* Only sysAdmin can delete users, but never the main system admin */}
                     {isSysAdmin && (
                       <Button
                         variant="ghost"
@@ -254,6 +283,7 @@ export function UsersTable() {
                         onClick={() => handleDeleteUser(profile)}
                         className="h-8 w-8"
                         title="Eliminar usuario"
+                        disabled={profile.email === 'solve.seeker.dev@gmail.com'}
                       >
                         <svg
                           className="h-5 w-5"
@@ -304,6 +334,13 @@ export function UsersTable() {
         onOpenChange={setIsManageRolesDialogOpen}
         user={selectedUser}
         onRolesUpdated={handleRolesUpdated}
+      />
+
+      <ManageUserCompaniesDialog
+        open={isManageCompaniesDialogOpen}
+        onOpenChange={setIsManageCompaniesDialogOpen}
+        user={selectedUser}
+        onCompaniesUpdated={handleCompaniesUpdated}
       />
 
       <ChangePasswordDialog
