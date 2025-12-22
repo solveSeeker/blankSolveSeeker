@@ -34,7 +34,7 @@ export function CompaniesTable() {
   // Helper function to count active users for a company
   const getActiveUserCountForCompany = (companyId: string): number => {
     return userCompanies.filter(
-      (uc) => uc.company_id === companyId && uc.is_active === true
+      (uc) => uc.company_id === companyId
     ).length
   }
 
