@@ -45,9 +45,8 @@ export function ManageUserCompaniesDialog({
 
             const { data, error } = await supabase
                 .from('user_companies')
-                .select('company_id, is_active')
+                .select('company_id')
                 .eq('profile_id', user.id)
-                .eq('is_active', true)
 
             if (error) throw error
 
@@ -90,11 +89,8 @@ export function ManageUserCompaniesDialog({
             // Asociaciones a insertar (nuevas)
             const companiesToInsert = selectedCompanyIds.filter(id => !existingCompanyIds.includes(id))
 
-            // Asociaciones a habilitar (existen pero deben estar active)
-            const companiesToEnable = selectedCompanyIds.filter(id => existingCompanyIds.includes(id))
-
-            // Asociaciones a deshabilitar (existen pero no están seleccionadas)
-            const companiesToDisable = existingCompanyIds.filter(id => !selectedCompanyIds.includes(id))
+            // Asociaciones a eliminar (existen pero no están seleccionadas)
+            const companiesToDelete = existingCompanyIds.filter(id => !selectedCompanyIds.includes(id))
 
             // Insertar nuevas asociaciones
             if (companiesToInsert.length > 0) {
@@ -104,8 +100,6 @@ export function ManageUserCompaniesDialog({
                 const newAssociations = companiesToInsert.map(companyId => ({
                     profile_id: user.id,
                     company_id: companyId,
-                    is_active: true,
-                    role: 'admin', // Default role
                     key: `${user.email}_${companyNames.get(companyId)}`
                 }))
 
@@ -116,26 +110,15 @@ export function ManageUserCompaniesDialog({
                 if (insertError) throw insertError
             }
 
-            // Habilitar existentes
-            if (companiesToEnable.length > 0) {
-                const { error: enableError } = await supabase
+            // Eliminar asociaciones no seleccionadas
+            if (companiesToDelete.length > 0) {
+                const { error: deleteError } = await supabase
                     .from('user_companies')
-                    .update({ is_active: true })
-                    .in('company_id', companiesToEnable)
+                    .delete()
+                    .in('company_id', companiesToDelete)
                     .eq('profile_id', user.id)
 
-                if (enableError) throw enableError
-            }
-
-            // Deshabilitar no seleccionadas
-            if (companiesToDisable.length > 0) {
-                const { error: disableError } = await supabase
-                    .from('user_companies')
-                    .update({ is_active: false })
-                    .in('company_id', companiesToDisable)
-                    .eq('profile_id', user.id)
-
-                if (disableError) throw disableError
+                if (deleteError) throw deleteError
             }
 
             onCompaniesUpdated()

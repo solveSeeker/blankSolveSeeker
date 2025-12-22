@@ -6,8 +6,6 @@ export interface UserCompany {
     user_id: string
     company_id: string
     company_name?: string
-    role?: string
-    is_active?: boolean
 }
 
 const GET_USER_COMPANIES_QUERY = gql`
@@ -17,8 +15,6 @@ const GET_USER_COMPANIES_QUERY = gql`
         node {
           profile_id
           company_id
-          role
-          is_active
           companies {
             name
           }
@@ -34,8 +30,6 @@ interface UserCompaniesResponse {
             node: {
                 profile_id: string
                 company_id: string
-                role: string
-                is_active: boolean
                 companies: {
                     name: string
                 } | null
@@ -64,8 +58,6 @@ export function useUserCompanies() {
                 user_id: edge.node.profile_id,
                 company_id: edge.node.company_id,
                 company_name: edge.node.companies?.name || 'unknown',
-                role: edge.node.role,
-                is_active: edge.node.is_active,
             }))
 
             setUserCompanies(mappedData)
@@ -80,13 +72,13 @@ export function useUserCompanies() {
 
     const getCompaniesForUser = (userId: string): string[] => {
         return userCompanies
-            .filter((uc) => uc.user_id === userId && uc.is_active)
+            .filter((uc) => uc.user_id === userId)
             .map((uc) => uc.company_name || 'unknown')
     }
 
     const getActiveCompaniesCount = (userId: string): number => {
         return userCompanies.filter(
-            (uc) => uc.user_id === userId && uc.is_active === true
+            (uc) => uc.user_id === userId
         ).length
     }
 
