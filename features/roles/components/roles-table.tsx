@@ -226,7 +226,7 @@ export function RolesTable() {
                     </button>
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
-                    {new Date(role.created_at || role.created || '').toLocaleDateString('es-ES')}
+                    {new Date(role.created || '').toLocaleDateString('es-ES')}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button

@@ -2,10 +2,8 @@ export interface Role {
   id: string
   name: string
   description: string
-  created_at: string
+  created: string
   hrchy?: number | null
-  // Legacy fields for compatibility
-  created?: string
   key?: string
   hashUpdate?: string
   visible: boolean
@@ -14,7 +12,6 @@ export interface Role {
   creator?: string | null
   updater?: string | null
   permissions?: Record<string, unknown>
-  dataVersion?: number
 }
 
 export interface CreateRoleInput {

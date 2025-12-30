@@ -251,21 +251,39 @@ Interactúa con PostgreSQL sin CLI ni migraciones manuales.
 ### UI/UX Standards
 
 #### Diálogos (Modals)
-**🎯 Regla Importante**: Todos los diálogos deben tener fondo blanco.
+**🎯 Regla CRÍTICA**: TODOS los diálogos (Dialog y AlertDialog) SIEMPRE deben tener fondo blanco explícito con `bg-white`.
+
+Esta regla aplica sin excepción a:
+- `<DialogContent>` - Diálogos normales
+- `<AlertDialogContent>` - Diálogos de alerta/confirmación
 
 ```typescript
-// ✅ CORRECTO
+// ✅ CORRECTO - Dialog normal
 <DialogContent className="sm:max-w-md bg-white">
   {/* contenido del diálogo */}
 </DialogContent>
+
+// ✅ CORRECTO - AlertDialog
+<AlertDialogContent className="sm:max-w-md bg-white">
+  {/* contenido del diálogo de alerta */}
+</AlertDialogContent>
 
 // ❌ INCORRECTO - sin bg-white
 <DialogContent className="sm:max-w-md">
   {/* contenido del diálogo */}
 </DialogContent>
+
+// ❌ INCORRECTO - AlertDialog sin bg-white
+<AlertDialogContent className="sm:max-w-md">
+  {/* contenido del diálogo de alerta */}
+</AlertDialogContent>
 ```
 
-**¿Por qué?**: Mantiene consistencia visual en toda la aplicación y mejora la legibilidad del contenido.
+**Ejemplos de implementación correcta:**
+- [manage-user-companies-dialog.tsx](features/users/components/manage-user-companies-dialog.tsx) - Dialog con `bg-white`
+- [disabled-companies-warning-dialog.tsx](features/users/components/disabled-companies-warning-dialog.tsx) - AlertDialog con `bg-white`
+
+**¿Por qué?**: Mantiene consistencia visual en toda la aplicación, mejora la legibilidad del contenido y evita que los diálogos hereden colores de fondo no deseados del tema.
 
 #### Inputs (Campos de Texto)
 **🎯 Estándar de Proyecto**: Todos los inputs tienen bordes claros y cambian a oscuro al tener foco.
@@ -303,6 +321,182 @@ El componente base `Input` (`components/ui/input.tsx`) ya está configurado con 
 - Mejora la accesibilidad al indicar claramente qué campo está activo
 - Centraliza el estilo en un solo lugar para facilitar cambios futuros
 - Evita duplicación de código en cada uso de Input
+
+#### Convención de Nombres para Acciones
+**🎯 Estándar de Proyecto**: Nomenclatura consistente para acciones de INSERT en la UI.
+
+**Regla para Títulos de Diálogos**:
+- **SIEMPRE usar "Agregar"** para operaciones de inserción de registros
+- **NUNCA usar** "Nueva", "Nuevo", "Crear" en títulos de diálogos
+
+```typescript
+// ✅ CORRECTO
+<DialogTitle>Agregar Empresa</DialogTitle>
+<DialogTitle>Agregar Usuario</DialogTitle>
+<DialogTitle>Agregar Rol</DialogTitle>
+
+// ❌ INCORRECTO
+<DialogTitle>Nueva Empresa</DialogTitle>
+<DialogTitle>Nuevo Usuario</DialogTitle>
+<DialogTitle>Crear Rol</DialogTitle>
+```
+
+**Regla para Botones de Acción**:
+- **SIEMPRE usar "Guardar"** para el botón de confirmación
+- **Aplica tanto para INSERT como para UPDATE**
+
+```typescript
+// ✅ CORRECTO - Tanto para agregar como para editar
+<Button type="submit">
+  {isLoading ? 'Guardando...' : 'Guardar'}
+</Button>
+
+// ❌ INCORRECTO - No usar "Crear"
+<Button type="submit">
+  {isLoading ? 'Creando...' : 'Crear'}
+</Button>
+```
+
+**Alcance**:
+- **Aplica a**: Títulos de diálogos/modals SOLAMENTE
+- **Módulos afectados**: TODOS (Empresas, Usuarios, Roles, Auditoría, etc.)
+- **No aplica a**: Botones de navegación, enlaces, o texto descriptivo
+
+**Ejemplos de implementación**:
+- Empresas: "Agregar Empresa" + botón "Guardar"
+- Usuarios: "Agregar Usuario" + botón "Guardar"
+- Roles: "Agregar Rol" + botón "Guardar"
+
+**¿Por qué?**: Mantiene consistencia lingüística en toda la aplicación, facilita la comprensión del usuario y establece un patrón claro de nomenclatura para futuras features.
+
+#### Botones de Eliminación
+**🎯 Estándar de Proyecto**: Los botones de eliminación SIEMPRE deben ser rojos y alineados a la derecha.
+
+**Reglas**:
+- **SIEMPRE usar `variant="destructive"`** en botones de eliminar
+- **SIEMPRE usar `<AlertDialogFooter>`** para estructura consistente
+- **NUNCA usar `<div className="flex">`** manual - usar componentes estándar
+- El color rojo indica visualmente una acción destructiva
+- Los botones deben estar alineados a la DERECHA en desktop
+
+```typescript
+// ✅ CORRECTO - Patrón estándar completo
+<AlertDialogFooter>
+  <Button
+    variant="outline"
+    onClick={() => onOpenChange(false)}
+    disabled={loading}
+  >
+    Cancelar
+  </Button>
+  <Button
+    variant="destructive"
+    onClick={handleDelete}
+    disabled={loading}
+  >
+    {loading ? 'Eliminando...' : 'Eliminar'}
+  </Button>
+</AlertDialogFooter>
+
+// ❌ INCORRECTO - Estructura manual
+<div className="flex gap-3">
+  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+  <Button variant="destructive">Eliminar</Button>
+</div>
+
+// ❌ INCORRECTO - Sin justify-end
+<div className="flex gap-2 justify-end">
+  {/* Usar AlertDialogFooter en su lugar */}
+</div>
+```
+
+**¿Por qué AlertDialogFooter?**:
+- Alineación automática a la derecha en desktop (`sm:justify-end`)
+- Stacking vertical automático en móvil (`flex-col-reverse`)
+- Espaciado consistente entre botones (`sm:space-x-2`)
+- Mejor responsive sin código extra
+- Mantenibilidad centralizada
+
+**Ejemplos de implementación correcta**:
+- [delete-company-dialog.tsx](features/companies/components/delete-company-dialog.tsx:75-89) ✅
+- [delete-role-dialog.tsx](features/roles/components/delete-role-dialog.tsx) ✅
+- [delete-user-dialog.tsx](features/users/components/delete-user-dialog.tsx) ✅
+- [hide-role-dialog.tsx](features/roles/components/hide-role-dialog.tsx) ✅
+- [hide-company-dialog.tsx](features/companies/components/hide-company-dialog.tsx) ✅
+
+**¿Por qué?**: El color rojo es universalmente reconocido como advertencia para acciones irreversibles o peligrosas. La alineación a la derecha sigue el patrón estándar de UI donde el botón primario/peligroso está a la derecha. Usar `AlertDialogFooter` asegura consistencia con el sistema de diseño y mejora la UX al prevenir eliminaciones accidentales.
+
+### Reglas de Borrado y Visibilidad de Registros
+
+**🎯 Regla Crítica**: Control de borrado basado en usuario y tipo de operación.
+
+#### Borrado Físico (DELETE)
+- **SOLO** el usuario `solve.seeker.dev@gmail.com` puede realizar borrado físico de registros
+- El borrado físico elimina permanentemente el registro de la base de datos
+- Debe implementarse con confirmación explícita del usuario
+
+```typescript
+// Ejemplo de verificación para borrado físico
+const canPhysicallyDelete = (userEmail: string): boolean => {
+  return userEmail === 'solve.seeker.dev@gmail.com'
+}
+
+// En el componente
+{canPhysicallyDelete(user.email) ? (
+  <Button onClick={handlePhysicalDelete}>Eliminar</Button>
+) : (
+  <Button onClick={handleLogicalDelete}>Deshabilitar</Button>
+)}
+```
+
+#### Borrado Lógico (Soft Delete)
+- **Cualquier usuario autorizado** puede realizar borrado lógico
+- El borrado lógico establece el campo `enabled` en `false`
+- Los registros con `enabled: false` se mantienen en la base de datos pero se consideran inactivos
+
+```typescript
+// Ejemplo de borrado lógico
+const handleLogicalDelete = async (id: string) => {
+  await supabase
+    .from('table_name')
+    .update({ enabled: false })
+    .eq('id', id)
+}
+```
+
+#### Visibilidad de Registros Deshabilitados
+- **SOLO en las grillas de los módulos del dashboard** se muestran registros con `enabled: false`
+- En los selectores, dropdowns y diálogos de asignación **NO se muestran** registros deshabilitados no asociados
+- Si un registro deshabilitado ya está asociado a una entidad, se muestra con:
+  - Fondo gris (`bg-gray-100`)
+  - Badge "Deshabilitada" (`<Badge variant="secondary">`)
+  - Opacidad reducida en checkbox (`opacity-70`)
+
+```typescript
+// Ejemplo de filtrado en grilla (muestra todos)
+const allRecords = await supabase
+  .from('companies')
+  .select('*')
+  .order('created', { ascending: false })
+
+// Ejemplo de filtrado en selector (solo habilitadas)
+const activeRecords = await supabase
+  .from('companies')
+  .select('*')
+  .eq('enabled', true)
+  .order('name')
+```
+
+#### Advertencias al Quitar Registros Deshabilitados
+Cuando un usuario intenta quitar una asociación con un registro deshabilitado, debe mostrarse un diálogo de advertencia:
+
+```typescript
+// Mensaje estándar de advertencia
+"Las [entidades] deshabilitadas que quites de este [contexto] no podrán
+ser reasignadas ya que están inactivas en el sistema. ¿Deseas continuar?"
+```
+
+**Ejemplo de implementación**: Ver [manage-user-companies-dialog.tsx](features/users/components/manage-user-companies-dialog.tsx) y [disabled-companies-warning-dialog.tsx](features/users/components/disabled-companies-warning-dialog.tsx)
 
 ### TypeScript Guidelines
 - **Siempre usar type hints** para function signatures

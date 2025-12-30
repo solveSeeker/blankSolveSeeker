@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import { type Profile } from '@/features/users/hooks/useProfiles'
 
 interface DeleteUserDialogProps {
@@ -54,18 +55,22 @@ export function DeleteUserDialog({ open, onOpenChange, user, onDeleted }: Delete
             {error}
           </div>
         )}
-        <div className="flex gap-2 justify-end">
-          <AlertDialogCancel disabled={loading}>
+        <AlertDialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
             Cancelar
-          </AlertDialogCancel>
-          <AlertDialogAction
+          </Button>
+          <Button
+            variant="destructive"
             onClick={handleDelete}
             disabled={loading}
-            className="bg-red-600 text-white hover:bg-red-700"
           >
             {loading ? 'Eliminando...' : 'Eliminar'}
-          </AlertDialogAction>
-        </div>
+          </Button>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   )

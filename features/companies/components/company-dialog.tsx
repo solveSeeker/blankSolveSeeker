@@ -120,9 +120,9 @@ export function CompanyDialog({ open, onOpenChange, company, onSaved }: CompanyD
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] bg-white">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Empresa' : 'Nueva Empresa'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Empresa' : 'Agregar Empresa'}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Actualiza la información de la empresa' : 'Crea una nueva empresa en el sistema'}
+            {isEditing ? 'Actualiza la información de la empresa' : 'Agrega una nueva empresa al sistema'}
           </DialogDescription>
         </DialogHeader>
 
@@ -233,7 +233,7 @@ export function CompanyDialog({ open, onOpenChange, company, onSaved }: CompanyD
               Cancelar
             </Button>
             <Button type="submit" disabled={loading} className="bg-gray-900 hover:bg-gray-800 text-white">
-              {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'}
+              {loading ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
         </form>

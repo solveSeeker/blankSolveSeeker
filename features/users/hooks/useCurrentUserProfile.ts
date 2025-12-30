@@ -23,7 +23,8 @@ const GET_CURRENT_USER_PROFILE_QUERY = gql`
           fullName
           is_sysadmin
           avatarURL
-          created_at
+          created
+          updated
         }
       }
     }
@@ -75,8 +76,8 @@ export function useCurrentUserProfile() {
           fullName: rawProfile.fullName,
           is_sysadmin: rawProfile.is_sysadmin,
           avatarUrl: (rawProfile as any).avatarURL,
-          createdAt: (rawProfile as any).created_at,
-          updatedAt: (rawProfile as any).created_at, // Using created_at for now since updated_at doesn't exist
+          createdAt: (rawProfile as any).created,
+          updatedAt: (rawProfile as any).updated,
         }
         setProfile(userProfile)
         setError(null)

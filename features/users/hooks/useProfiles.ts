@@ -9,12 +9,12 @@ export interface Profile {
   avatarURL: string | null
   is_active: boolean
   is_sysadmin: boolean
-  created_at: string
+  created: string
 }
 
 const GET_PROFILES_QUERY = gql`
   query GetProfiles {
-    profilesCollection(orderBy: { created_at: DescNullsLast }) {
+    profilesCollection(orderBy: { created: DescNullsLast }) {
       edges {
         node {
           id
@@ -23,7 +23,7 @@ const GET_PROFILES_QUERY = gql`
           avatarURL
           is_active
           is_sysadmin
-          created_at
+          created
         }
       }
     }

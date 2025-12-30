@@ -64,6 +64,18 @@ export const roleService = {
   },
 
   async deleteRole(id: string): Promise<void> {
+    // Primero eliminar todas las asignaciones deshabilitadas (enabled=false)
+    const { error: userRolesError } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('role_id', id)
+      .eq('enabled', false)
+
+    if (userRolesError) {
+      throw userRolesError
+    }
+
+    // Luego eliminar el rol
     const { error } = await supabase
       .from('roles')
       .delete()

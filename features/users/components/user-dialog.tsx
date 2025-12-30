@@ -94,10 +94,10 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
       <DialogContent className="bg-white">
         <DialogHeader>
           <DialogTitle>
-            {user ? 'Editar Usuario' : 'Crear Usuario'}
+            {user ? 'Editar Usuario' : 'Agregar Usuario'}
           </DialogTitle>
           <DialogDescription>
-            {user ? 'Actualiza los datos del usuario' : 'Crea un nuevo usuario en el sistema'}
+            {user ? 'Actualiza los datos del usuario' : 'Agrega un nuevo usuario al sistema'}
           </DialogDescription>
         </DialogHeader>
 
@@ -155,7 +155,7 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
               Cancelar
             </Button>
             <Button type="submit" disabled={loading} className="bg-gray-900 hover:bg-gray-800 text-white">
-              {loading ? 'Guardando...' : user ? 'Actualizar' : 'Crear'}
+              {loading ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
         </form>

@@ -4,7 +4,7 @@ export interface Profile {
   company_id: string
   role: string
   is_active: boolean
-  created_at: string
+  created: string
 }
 
 // Extended profile with user data from auth.users

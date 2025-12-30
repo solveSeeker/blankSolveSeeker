@@ -80,7 +80,7 @@ export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialog
       <DialogContent className="bg-white">
         <DialogHeader>
           <DialogTitle>
-            {role ? 'Editar Rol' : 'Crear Rol'}
+            {role ? 'Editar Rol' : 'Agregar Rol'}
           </DialogTitle>
           <DialogDescription>
             {role ? 'Actualiza la información del rol' : 'Agrega un nuevo rol al sistema'}
