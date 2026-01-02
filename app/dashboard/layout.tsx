@@ -74,9 +74,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col h-screen">
         {/* Header */}
-        <div className="flex items-center h-16 px-8 border-b border-gray-200 bg-white">
+        <div className="flex items-center h-16 px-8 border-b border-gray-200 bg-white flex-shrink-0">
           {pageInfo.title && (
             <div className="flex items-center gap-3">
               {pageInfo.icon && (
@@ -96,7 +96,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Content */}
-        {children}
+        <div className="flex-1 overflow-hidden">
+          {children}
+        </div>
       </main>
     </div>
   )

@@ -6,10 +6,11 @@ import { getGraphQLClient } from '@/shared/lib/graphql/client'
 import { AuditLog } from '../types/audit.types'
 
 const GET_AUDIT_LOGS_QUERY = gql`
-  query GetAuditLogs($first: Int!, $offset: Int!) {
+  query GetAuditLogs($first: Int!, $offset: Int!, $filter: AuditLogFilter) {
     auditLogCollection(
       first: $first
       offset: $offset
+      filter: $filter
       orderBy: { updated: DescNullsLast }
     ) {
       edges {
@@ -35,8 +36,8 @@ const GET_AUDIT_LOGS_QUERY = gql`
 `
 
 const GET_TOTAL_COUNT_QUERY = gql`
-  query GetTotalAuditLogsCount {
-    auditLogCollection {
+  query GetTotalAuditLogsCount($filter: AuditLogFilter) {
+    auditLogCollection(filter: $filter) {
       edges {
         node {
           id
@@ -67,9 +68,10 @@ interface TotalCountResponse {
 interface UseAuditLogsParams {
   page?: number
   pageSize?: number
+  searchTerm?: string
 }
 
-export function useAuditLogs({ page = 1, pageSize = 15 }: UseAuditLogsParams = {}) {
+export function useAuditLogs({ page = 1, pageSize = 10, searchTerm = '' }: UseAuditLogsParams = {}) {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -77,7 +79,7 @@ export function useAuditLogs({ page = 1, pageSize = 15 }: UseAuditLogsParams = {
 
   useEffect(() => {
     fetchAuditLogs()
-  }, [page, pageSize])
+  }, [page, pageSize, searchTerm])
 
   const fetchAuditLogs = async () => {
     try {
@@ -86,17 +88,28 @@ export function useAuditLogs({ page = 1, pageSize = 15 }: UseAuditLogsParams = {
 
       const offset = (page - 1) * pageSize
 
+      // Construir filtro si hay término de búsqueda
+      const filter = searchTerm
+        ? {
+            or: [
+              { nameTable: { ilike: `%${searchTerm}%` } },
+              { userIdentifier: { ilike: `%${searchTerm}%` } }
+            ]
+          }
+        : undefined
+
       // Obtener datos paginados
       const data = await client.request<AuditLogsResponse>(GET_AUDIT_LOGS_QUERY, {
         first: pageSize,
-        offset: offset
+        offset: offset,
+        filter: filter
       })
 
-      // Obtener total count (solo en la primera carga)
-      if (totalCount === 0) {
-        const countData = await client.request<TotalCountResponse>(GET_TOTAL_COUNT_QUERY)
-        setTotalCount(countData.auditLogCollection.edges.length)
-      }
+      // Obtener total count
+      const countData = await client.request<TotalCountResponse>(GET_TOTAL_COUNT_QUERY, {
+        filter: filter
+      })
+      setTotalCount(countData.auditLogCollection.edges.length)
 
       // Parsear el campo diff de string a objeto JSON
       const logsList = data.auditLogCollection.edges.map((edge) => {
