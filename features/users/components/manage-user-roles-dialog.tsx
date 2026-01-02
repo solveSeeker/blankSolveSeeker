@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useRoles } from '@/features/roles/hooks/useRoles'
-import { createClient } from '@/shared/lib/supabase/client'
+import { gql } from 'graphql-request'
+import { getGraphQLClient } from '@/shared/lib/graphql/client'
 import type { Profile } from '../hooks/useProfiles'
 
 interface ManageUserRolesDialogProps {
@@ -13,6 +14,104 @@ interface ManageUserRolesDialogProps {
   onOpenChange: (open: boolean) => void
   user: Profile | null
   onRolesUpdated: () => void
+}
+
+// GraphQL Queries y Mutations
+const GET_USER_ROLES_QUERY = gql`
+  query GetUserRoles($userId: UUID!) {
+    user_rolesCollection(filter: { user_id: { eq: $userId } }) {
+      edges {
+        node {
+          role_id
+          enabled
+        }
+      }
+    }
+  }
+`
+
+const GET_ALL_USER_ROLES_QUERY = gql`
+  query GetAllUserRoles($userId: UUID!) {
+    user_rolesCollection(filter: { user_id: { eq: $userId } }) {
+      edges {
+        node {
+          id
+          role_id
+        }
+      }
+    }
+  }
+`
+
+const INSERT_USER_ROLES_MUTATION = gql`
+  mutation InsertUserRoles($objects: [user_rolesInsertInput!]!) {
+    insertIntouser_rolesCollection(objects: $objects) {
+      affectedCount
+      records {
+        id
+        user_id
+        role_id
+        enabled
+      }
+    }
+  }
+`
+
+const UPDATE_USER_ROLES_MUTATION = gql`
+  mutation UpdateUserRoles($filter: user_rolesFilter!, $set: user_rolesUpdateInput!) {
+    updateuser_rolesCollection(filter: $filter, set: $set) {
+      affectedCount
+      records {
+        id
+        enabled
+      }
+    }
+  }
+`
+
+// Interfaces para las respuestas GraphQL
+interface UserRoleNode {
+  role_id: string
+  enabled: boolean
+}
+
+interface AllUserRoleNode {
+  id: string
+  role_id: string
+}
+
+interface GetUserRolesResponse {
+  user_rolesCollection: {
+    edges: Array<{ node: UserRoleNode }>
+  }
+}
+
+interface GetAllUserRolesResponse {
+  user_rolesCollection: {
+    edges: Array<{ node: AllUserRoleNode }>
+  }
+}
+
+interface InsertUserRolesResponse {
+  insertIntouser_rolesCollection: {
+    affectedCount: number
+    records: Array<{
+      id: string
+      user_id: string
+      role_id: string
+      enabled: boolean
+    }>
+  }
+}
+
+interface UpdateUserRolesResponse {
+  updateuser_rolesCollection: {
+    affectedCount: number
+    records: Array<{
+      id: string
+      enabled: boolean
+    }>
+  }
 }
 
 export function ManageUserRolesDialog({
@@ -41,17 +140,16 @@ export function ManageUserRolesDialog({
 
     try {
       setIsFetchingUserRoles(true)
-      const supabase = createClient()
+      const client = await getGraphQLClient()
 
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role_id, enabled')
-        .eq('user_id', user.id)
-        .eq('enabled', true)
+      const data = await client.request<GetUserRolesResponse>(GET_USER_ROLES_QUERY, {
+        userId: user.id
+      })
 
-      if (error) throw error
+      const roleIds = data.user_rolesCollection.edges
+        .filter(edge => edge.node.enabled)
+        .map(edge => edge.node.role_id)
 
-      const roleIds = data?.map(ur => ur.role_id) || []
       setSelectedRoleIds(roleIds)
     } catch (error) {
       console.error('Error al cargar roles del usuario:', error)
@@ -75,18 +173,16 @@ export function ManageUserRolesDialog({
 
     try {
       setIsLoading(true)
-      const supabase = createClient()
+      const client = await getGraphQLClient()
 
       // Obtener todos los roles existentes del usuario (enabled y disabled)
-      const { data: existingRoles, error: fetchError } = await supabase
-        .from('user_roles')
-        .select('role_id, id')
-        .eq('user_id', user.id)
+      const existingData = await client.request<GetAllUserRolesResponse>(
+        GET_ALL_USER_ROLES_QUERY,
+        { userId: user.id }
+      )
 
-      if (fetchError) throw fetchError
-
-      const existingRoleIds = existingRoles?.map(r => r.role_id) || []
-      const existingRolesMap = new Map(existingRoles?.map(r => [r.role_id, r.id]))
+      const existingRoles = existingData.user_rolesCollection.edges.map(edge => edge.node)
+      const existingRoleIds = existingRoles.map(r => r.role_id)
 
       // Roles a insertar (nuevos roles que no existen)
       const rolesToInsert = selectedRoleIds.filter(roleId => !existingRoleIds.includes(roleId))
@@ -96,6 +192,14 @@ export function ManageUserRolesDialog({
 
       // Roles a deshabilitar (existen pero no están seleccionados)
       const rolesToDisable = existingRoleIds.filter(roleId => !selectedRoleIds.includes(roleId))
+
+      // 🔍 DEBUG LOGS
+      console.log('🔍 DEBUG - User:', user.email, user.id)
+      console.log('🔍 DEBUG - selectedRoleIds:', selectedRoleIds)
+      console.log('🔍 DEBUG - existingRoleIds:', existingRoleIds)
+      console.log('🔍 DEBUG - rolesToInsert:', rolesToInsert)
+      console.log('🔍 DEBUG - rolesToEnable:', rolesToEnable)
+      console.log('🔍 DEBUG - rolesToDisable:', rolesToDisable)
 
       // Insertar nuevos roles con enabled=true
       if (rolesToInsert.length > 0) {
@@ -109,39 +213,48 @@ export function ManageUserRolesDialog({
           key: `${user.email}_${roleNames.get(roleId)}`
         }))
 
-        const { error: insertError } = await supabase
-          .from('user_roles')
-          .insert(newRoles)
-
-        if (insertError) throw insertError
+        console.log('🔍 DEBUG - Ejecutando INSERT para:', newRoles)
+        const insertResult = await client.request<InsertUserRolesResponse>(INSERT_USER_ROLES_MUTATION, {
+          objects: newRoles
+        })
+        console.log('🔍 DEBUG - Resultado INSERT:', insertResult)
       }
 
       // Habilitar roles existentes
       if (rolesToEnable.length > 0) {
-        const { error: enableError } = await supabase
-          .from('user_roles')
-          .update({ enabled: true })
-          .in('role_id', rolesToEnable)
-          .eq('user_id', user.id)
-
-        if (enableError) throw enableError
+        console.log('🔍 DEBUG - Ejecutando UPDATE para HABILITAR:', rolesToEnable)
+        const enableResult = await client.request<UpdateUserRolesResponse>(UPDATE_USER_ROLES_MUTATION, {
+          filter: {
+            user_id: { eq: user.id },
+            role_id: { in: rolesToEnable }
+          },
+          set: {
+            enabled: true
+          }
+        })
+        console.log('🔍 DEBUG - Resultado HABILITAR:', enableResult)
       }
 
       // Deshabilitar roles no seleccionados
       if (rolesToDisable.length > 0) {
-        const { error: disableError } = await supabase
-          .from('user_roles')
-          .update({ enabled: false })
-          .in('role_id', rolesToDisable)
-          .eq('user_id', user.id)
-
-        if (disableError) throw disableError
+        console.log('🔍 DEBUG - Ejecutando UPDATE para DESHABILITAR:', rolesToDisable)
+        const disableResult = await client.request<UpdateUserRolesResponse>(UPDATE_USER_ROLES_MUTATION, {
+          filter: {
+            user_id: { eq: user.id },
+            role_id: { in: rolesToDisable }
+          },
+          set: {
+            enabled: false
+          }
+        })
+        console.log('🔍 DEBUG - Resultado DESHABILITAR:', disableResult)
       }
 
+      console.log('🔍 DEBUG - Operaciones completadas, cerrando diálogo')
       onRolesUpdated()
       onOpenChange(false)
     } catch (error) {
-      console.error('Error al guardar roles:', error)
+      console.error('❌ Error al guardar roles:', error)
     } finally {
       setIsLoading(false)
     }
