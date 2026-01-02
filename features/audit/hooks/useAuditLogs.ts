@@ -6,8 +6,12 @@ import { getGraphQLClient } from '@/shared/lib/graphql/client'
 import { AuditLog } from '../types/audit.types'
 
 const GET_AUDIT_LOGS_QUERY = gql`
-  query GetAuditLogs {
-    auditLogCollection(orderBy: { updated: DescNullsLast }) {
+  query GetAuditLogs($first: Int!, $offset: Int!) {
+    auditLogCollection(
+      first: $first
+      offset: $offset
+      orderBy: { updated: DescNullsLast }
+    ) {
       edges {
         node {
           id
@@ -22,6 +26,22 @@ const GET_AUDIT_LOGS_QUERY = gql`
           diff
         }
       }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+`
+
+const GET_TOTAL_COUNT_QUERY = gql`
+  query GetTotalAuditLogsCount {
+    auditLogCollection {
+      edges {
+        node {
+          id
+        }
+      }
     }
   }
 `
@@ -31,24 +51,52 @@ interface AuditLogsResponse {
     edges: Array<{
       node: AuditLog
     }>
+    pageInfo: {
+      hasNextPage: boolean
+      hasPreviousPage: boolean
+    }
   }
 }
 
-export function useAuditLogs() {
+interface TotalCountResponse {
+  auditLogCollection: {
+    edges: Array<{ node: { id: string } }>
+  }
+}
+
+interface UseAuditLogsParams {
+  page?: number
+  pageSize?: number
+}
+
+export function useAuditLogs({ page = 1, pageSize = 15 }: UseAuditLogsParams = {}) {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAuditLogs()
-  }, [])
+  }, [page, pageSize])
 
   const fetchAuditLogs = async () => {
     try {
       setIsLoading(true)
       const client = await getGraphQLClient()
 
-      const data = await client.request<AuditLogsResponse>(GET_AUDIT_LOGS_QUERY)
+      const offset = (page - 1) * pageSize
+
+      // Obtener datos paginados
+      const data = await client.request<AuditLogsResponse>(GET_AUDIT_LOGS_QUERY, {
+        first: pageSize,
+        offset: offset
+      })
+
+      // Obtener total count (solo en la primera carga)
+      if (totalCount === 0) {
+        const countData = await client.request<TotalCountResponse>(GET_TOTAL_COUNT_QUERY)
+        setTotalCount(countData.auditLogCollection.edges.length)
+      }
 
       // Parsear el campo diff de string a objeto JSON
       const logsList = data.auditLogCollection.edges.map((edge) => {
@@ -83,6 +131,7 @@ export function useAuditLogs() {
 
   return {
     auditLogs,
+    totalCount,
     isLoading,
     error,
     refetch: fetchAuditLogs,

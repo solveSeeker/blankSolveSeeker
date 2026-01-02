@@ -1,36 +1,58 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuditLogs } from '@/features/audit/hooks/useAuditLogs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Empty } from '@/components/ui/empty'
+import { Pagination } from '@/shared/components/pagination'
 import { Search, Eye } from 'lucide-react'
 import { AuditDiffDialog } from './audit-diff-dialog'
 import type { AuditLog } from '../types/audit.types'
 
 export function AuditLogsTable() {
-  const { auditLogs, isLoading, error } = useAuditLogs()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(15)
 
-  const filteredLogs = auditLogs
-    .filter(log => {
-      const searchLower = searchTerm.toLowerCase()
-      return (
-        log.nameTable?.toLowerCase().includes(searchLower) ||
-        log.userIdentifier?.toLowerCase().includes(searchLower)
-      )
-    })
-    .sort((a, b) => {
-      // Ordenar por fecha descendente (más reciente primero)
-      const dateA = a.updated ? new Date(a.updated).getTime() : 0
-      const dateB = b.updated ? new Date(b.updated).getTime() : 0
-      return dateB - dateA
-    })
+  const { auditLogs, totalCount, isLoading, error } = useAuditLogs({
+    page: currentPage,
+    pageSize: pageSize
+  })
+
+  // Filtrado local de los resultados paginados
+  const filteredLogs = useMemo(() => {
+    if (!searchTerm) return auditLogs
+
+    const searchLower = searchTerm.toLowerCase()
+    return auditLogs.filter(log =>
+      log.nameTable?.toLowerCase().includes(searchLower) ||
+      log.userIdentifier?.toLowerCase().includes(searchLower)
+    )
+  }, [auditLogs, searchTerm])
+
+  // Resetear a página 1 cuando cambia la búsqueda
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    if (currentPage !== 1) {
+      setCurrentPage(1)
+    }
+  }
+
+  // Manejar cambio de página
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  // Manejar cambio de tamaño de página
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size)
+    setCurrentPage(1) // Resetear a página 1 cuando cambia el tamaño
+  }
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-'
@@ -59,7 +81,7 @@ export function AuditLogsTable() {
           <Input
             placeholder="Buscar por tabla o usuario..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 border-gray-200"
           />
         </div>
@@ -79,46 +101,59 @@ export function AuditLogsTable() {
       ) : filteredLogs.length === 0 ? (
         <Empty title="No hay registros de auditoría" />
       ) : (
-        <div className="rounded-lg border border-gray-200 overflow-hidden">
-          <Table>
-            <TableHeader className="bg-gray-900">
-              <TableRow className="hover:bg-gray-900 h-12">
-                <TableHead className="text-white">Fecha</TableHead>
-                <TableHead className="text-white">Tabla</TableHead>
-                <TableHead className="text-white">Usuario</TableHead>
-                <TableHead className="text-white"></TableHead>
-                <TableHead className="text-white">Cambios</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLogs.map((log, index) => (
-                <TableRow key={log.id} className={`h-auto border-0 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
-                  <TableCell className="text-sm text-gray-600 whitespace-nowrap">
-                    {formatDate(log.updated)}
-                  </TableCell>
-                  <TableCell className="font-medium">{log.nameTable || '-'}</TableCell>
-                  <TableCell className="text-sm text-gray-600 font-mono text-xs">
-                    {log.userIdentifier || '-'}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-600 font-mono text-xs">
-                    {log.currentUser || '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleViewDiff(log)}
-                      className="h-8 w-8"
-                      title="Ver cambios"
-                    >
-                      <Eye className="h-5 w-5" />
-                    </Button>
-                  </TableCell>
+        <>
+          <div className="rounded-lg border border-gray-200 overflow-hidden">
+            <Table>
+              <TableHeader className="bg-gray-900">
+                <TableRow className="hover:bg-gray-900 h-12">
+                  <TableHead className="text-white">Fecha</TableHead>
+                  <TableHead className="text-white">Tabla</TableHead>
+                  <TableHead className="text-white">Usuario</TableHead>
+                  <TableHead className="text-white"></TableHead>
+                  <TableHead className="text-white">Cambios</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filteredLogs.map((log, index) => (
+                  <TableRow key={log.id} className={`h-auto border-0 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
+                    <TableCell className="text-sm text-gray-600 whitespace-nowrap">
+                      {formatDate(log.updated)}
+                    </TableCell>
+                    <TableCell className="font-medium">{log.nameTable || '-'}</TableCell>
+                    <TableCell className="text-sm text-gray-600 font-mono text-xs">
+                      {log.userIdentifier || '-'}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600 font-mono text-xs">
+                      {log.currentUser || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleViewDiff(log)}
+                        className="h-8 w-8"
+                        title="Ver cambios"
+                      >
+                        <Eye className="h-5 w-5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {!searchTerm && totalCount > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalCount}
+              pageSize={pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          )}
+        </>
       )}
 
       {/* Diff Dialog */}
