@@ -13,6 +13,7 @@ const GET_AUDIT_LOGS_QUERY = gql`
       filter: $filter
       orderBy: { updated: DescNullsLast }
     ) {
+      totalCount
       edges {
         node {
           id
@@ -30,18 +31,8 @@ const GET_AUDIT_LOGS_QUERY = gql`
       pageInfo {
         hasNextPage
         hasPreviousPage
-      }
-    }
-  }
-`
-
-const GET_TOTAL_COUNT_QUERY = gql`
-  query GetTotalAuditLogsCount($filter: AuditLogFilter) {
-    auditLogCollection(filter: $filter) {
-      edges {
-        node {
-          id
-        }
+        startCursor
+        endCursor
       }
     }
   }
@@ -49,19 +40,16 @@ const GET_TOTAL_COUNT_QUERY = gql`
 
 interface AuditLogsResponse {
   auditLogCollection: {
+    totalCount: number
     edges: Array<{
       node: AuditLog
     }>
     pageInfo: {
       hasNextPage: boolean
       hasPreviousPage: boolean
+      startCursor: string | null
+      endCursor: string | null
     }
-  }
-}
-
-interface TotalCountResponse {
-  auditLogCollection: {
-    edges: Array<{ node: { id: string } }>
   }
 }
 
@@ -84,7 +72,7 @@ export function useAuditLogs({ page = 1, pageSize = 10, searchTerm = '' }: UseAu
   const fetchAuditLogs = async () => {
     try {
       setIsLoading(true)
-      const client = await getGraphQLClient()
+      const graphqlClient = await getGraphQLClient()
 
       const offset = (page - 1) * pageSize
 
@@ -98,18 +86,15 @@ export function useAuditLogs({ page = 1, pageSize = 10, searchTerm = '' }: UseAu
           }
         : undefined
 
-      // Obtener datos paginados
-      const data = await client.request<AuditLogsResponse>(GET_AUDIT_LOGS_QUERY, {
+      // Obtener datos paginados y totalCount usando GraphQL
+      const data = await graphqlClient.request<AuditLogsResponse>(GET_AUDIT_LOGS_QUERY, {
         first: pageSize,
         offset: offset,
         filter: filter
       })
 
-      // Obtener total count
-      const countData = await client.request<TotalCountResponse>(GET_TOTAL_COUNT_QUERY, {
-        filter: filter
-      })
-      setTotalCount(countData.auditLogCollection.edges.length)
+      // Extraer totalCount directamente del GraphQL response
+      setTotalCount(data.auditLogCollection.totalCount)
 
       // Parsear el campo diff de string a objeto JSON
       const logsList = data.auditLogCollection.edges.map((edge) => {
@@ -137,6 +122,7 @@ export function useAuditLogs({ page = 1, pageSize = 10, searchTerm = '' }: UseAu
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar registros de auditoría')
       setAuditLogs([])
+      setTotalCount(0)
     } finally {
       setIsLoading(false)
     }
