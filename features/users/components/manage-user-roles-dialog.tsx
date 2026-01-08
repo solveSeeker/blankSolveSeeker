@@ -5,8 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useRoles } from '@/features/roles/hooks/useRoles'
-import { gql } from 'graphql-request'
-import { getGraphQLClient } from '@/shared/lib/graphql/client'
+import { useMutateUserRole } from '../hooks/useMutateUserRole'
 import type { Profile } from '../hooks/useProfiles'
 
 interface ManageUserRolesDialogProps {
@@ -16,104 +15,6 @@ interface ManageUserRolesDialogProps {
   onRolesUpdated: () => void
 }
 
-// GraphQL Queries y Mutations
-const GET_USER_ROLES_QUERY = gql`
-  query GetUserRoles($userId: UUID!) {
-    user_rolesCollection(filter: { user_id: { eq: $userId } }) {
-      edges {
-        node {
-          role_id
-          enabled
-        }
-      }
-    }
-  }
-`
-
-const GET_ALL_USER_ROLES_QUERY = gql`
-  query GetAllUserRoles($userId: UUID!) {
-    user_rolesCollection(filter: { user_id: { eq: $userId } }) {
-      edges {
-        node {
-          id
-          role_id
-        }
-      }
-    }
-  }
-`
-
-const INSERT_USER_ROLES_MUTATION = gql`
-  mutation InsertUserRoles($objects: [user_rolesInsertInput!]!) {
-    insertIntouser_rolesCollection(objects: $objects) {
-      affectedCount
-      records {
-        id
-        user_id
-        role_id
-        enabled
-      }
-    }
-  }
-`
-
-const UPDATE_USER_ROLES_MUTATION = gql`
-  mutation UpdateUserRoles($filter: user_rolesFilter!, $set: user_rolesUpdateInput!) {
-    updateuser_rolesCollection(filter: $filter, set: $set) {
-      affectedCount
-      records {
-        id
-        enabled
-      }
-    }
-  }
-`
-
-// Interfaces para las respuestas GraphQL
-interface UserRoleNode {
-  role_id: string
-  enabled: boolean
-}
-
-interface AllUserRoleNode {
-  id: string
-  role_id: string
-}
-
-interface GetUserRolesResponse {
-  user_rolesCollection: {
-    edges: Array<{ node: UserRoleNode }>
-  }
-}
-
-interface GetAllUserRolesResponse {
-  user_rolesCollection: {
-    edges: Array<{ node: AllUserRoleNode }>
-  }
-}
-
-interface InsertUserRolesResponse {
-  insertIntouser_rolesCollection: {
-    affectedCount: number
-    records: Array<{
-      id: string
-      user_id: string
-      role_id: string
-      enabled: boolean
-    }>
-  }
-}
-
-interface UpdateUserRolesResponse {
-  updateuser_rolesCollection: {
-    affectedCount: number
-    records: Array<{
-      id: string
-      enabled: boolean
-    }>
-  }
-}
-
 export function ManageUserRolesDialog({
   open,
   onOpenChange,
@@ -121,8 +22,8 @@ export function ManageUserRolesDialog({
   onRolesUpdated
 }: ManageUserRolesDialogProps) {
   const { roles, isLoading: rolesLoading } = useRoles()
+  const { fetchAllByProfile, insert, updateStatus, isLoading: isSaving } = useMutateUserRole()
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [isFetchingUserRoles, setIsFetchingUserRoles] = useState(false)
 
   // Cargar roles actuales del usuario
@@ -140,15 +41,12 @@ export function ManageUserRolesDialog({
 
     try {
       setIsFetchingUserRoles(true)
-      const client = await getGraphQLClient()
 
-      const data = await client.request<GetUserRolesResponse>(GET_USER_ROLES_QUERY, {
-        userId: user.id
-      })
+      const userRoles = await fetchAllByProfile(user.id)
 
-      const roleIds = data.user_rolesCollection.edges
-        .filter(edge => edge.node.enabled)
-        .map(edge => edge.node.role_id)
+      const roleIds = userRoles
+        .filter(ur => ur.enabled)
+        .map(ur => ur.role_id)
 
       setSelectedRoleIds(roleIds)
     } catch (error) {
@@ -172,16 +70,8 @@ export function ManageUserRolesDialog({
     if (!user) return
 
     try {
-      setIsLoading(true)
-      const client = await getGraphQLClient()
-
       // Obtener todos los roles existentes del usuario (enabled y disabled)
-      const existingData = await client.request<GetAllUserRolesResponse>(
-        GET_ALL_USER_ROLES_QUERY,
-        { userId: user.id }
-      )
-
-      const existingRoles = existingData.user_rolesCollection.edges.map(edge => edge.node)
+      const existingRoles = await fetchAllByProfile(user.id)
       const existingRoleIds = existingRoles.map(r => r.role_id)
 
       // Roles a insertar (nuevos roles que no existen)
@@ -203,51 +93,41 @@ export function ManageUserRolesDialog({
 
       // Insertar nuevos roles con enabled=true
       if (rolesToInsert.length > 0) {
-        // Obtener nombres de roles para generar keys
-        const roleNames = new Map(roles.map(r => [r.id, r.name]))
+        // Crear mapa de roleId -> roleName
+        const roleNamesMap = new Map(roles.map(r => [r.id, r.name]))
 
-        const newRoles = rolesToInsert.map(roleId => ({
-          user_id: user.id,
-          role_id: roleId,
+        // Construir inputs con email y name para relatedObjects
+        const insertInputs = rolesToInsert.map(roleId => ({
+          profileId: user.id,
+          profileEmail: user.email,  // ✅ Necesario para relatedObjects
+          roleId: roleId,
+          roleName: roleNamesMap.get(roleId) || '',  // ✅ Necesario para relatedObjects
           enabled: true,
-          key: `${user.email}_${roleNames.get(roleId)}`
+          visible: true
         }))
 
-        console.log('🔍 DEBUG - Ejecutando INSERT para:', newRoles)
-        const insertResult = await client.request<InsertUserRolesResponse>(INSERT_USER_ROLES_MUTATION, {
-          objects: newRoles
-        })
-        console.log('🔍 DEBUG - Resultado INSERT:', insertResult)
+        console.log('🔍 DEBUG - Ejecutando INSERT con relatedObjects')
+        await insert(insertInputs)
       }
 
       // Habilitar roles existentes
       if (rolesToEnable.length > 0) {
         console.log('🔍 DEBUG - Ejecutando UPDATE para HABILITAR:', rolesToEnable)
-        const enableResult = await client.request<UpdateUserRolesResponse>(UPDATE_USER_ROLES_MUTATION, {
-          filter: {
-            user_id: { eq: user.id },
-            role_id: { in: rolesToEnable }
-          },
-          set: {
-            enabled: true
-          }
+        await updateStatus({
+          profileId: user.id,
+          roleIds: rolesToEnable,
+          enabled: true
         })
-        console.log('🔍 DEBUG - Resultado HABILITAR:', enableResult)
       }
 
       // Deshabilitar roles no seleccionados
       if (rolesToDisable.length > 0) {
         console.log('🔍 DEBUG - Ejecutando UPDATE para DESHABILITAR:', rolesToDisable)
-        const disableResult = await client.request<UpdateUserRolesResponse>(UPDATE_USER_ROLES_MUTATION, {
-          filter: {
-            user_id: { eq: user.id },
-            role_id: { in: rolesToDisable }
-          },
-          set: {
-            enabled: false
-          }
+        await updateStatus({
+          profileId: user.id,
+          roleIds: rolesToDisable,
+          enabled: false
         })
-        console.log('🔍 DEBUG - Resultado DESHABILITAR:', disableResult)
       }
 
       console.log('🔍 DEBUG - Operaciones completadas, cerrando diálogo')
@@ -255,8 +135,6 @@ export function ManageUserRolesDialog({
       onOpenChange(false)
     } catch (error) {
       console.error('❌ Error al guardar roles:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -321,16 +199,16 @@ export function ManageUserRolesDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isLoading}
+            disabled={isSaving}
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
-            disabled={isLoading}
+            disabled={isSaving}
             className="bg-gray-900 hover:bg-gray-800 text-white"
           >
-            {isLoading ? 'Guardando...' : 'Guardar cambios'}
+            {isSaving ? 'Guardando...' : 'Guardar cambios'}
           </Button>
         </div>
       </DialogContent>
