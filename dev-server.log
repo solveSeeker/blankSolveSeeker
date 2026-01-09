@@ -234,3 +234,12 @@ Error inserting user_roles: {
  GET /dashboard/users 200 in 71ms
  GET /dashboard/audit 200 in 32ms
  GET /dashboard/users 200 in 31ms
+ ✓ Compiled in 1614ms (1648 modules)
+ GET /dashboard/audit 200 in 1085ms
+ GET /dashboard/users 200 in 999ms
+ GET /dashboard/users 200 in 49ms
+ GET /dashboard/audit 200 in 48ms
+ GET /dashboard/audit 200 in 33ms
+ ✓ Compiled in 289ms (658 modules)
+ GET /dashboard/users 200 in 43ms
+ GET /dashboard/audit 200 in 34ms

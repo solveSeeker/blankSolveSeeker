@@ -106,11 +106,17 @@ export function ManageUserCompaniesDialog({
             // Empresas a insertar (nuevas que no existen)
             const companiesToInsert = selectedCompanyIds.filter(id => !existingCompanyIds.includes(id))
 
-            // Empresas a habilitar (existen pero deben estar enabled)
-            const companiesToEnable = selectedCompanyIds.filter(id => existingCompanyIds.includes(id))
+            // Empresas a habilitar (existen DESHABILITADAS pero ahora están seleccionadas)
+            const companiesToEnable = selectedCompanyIds.filter(id => {
+                const existing = existingAssociations.find(a => a.company_id === id)
+                return existing && !existing.enabled
+            })
 
-            // Empresas a deshabilitar (existen pero NO están seleccionadas)
-            const companiesToDisable = existingCompanyIds.filter(id => !selectedCompanyIds.includes(id))
+            // Empresas a deshabilitar (existen HABILITADAS pero ya NO están seleccionadas)
+            const companiesToDisable = existingCompanyIds.filter(id => {
+                const existing = existingAssociations.find(a => a.company_id === id)
+                return existing && existing.enabled && !selectedCompanyIds.includes(id)
+            })
 
             // Detectar empresas deshabilitadas que se están quitando
             const disabledCompaniesToDisable = companiesToDisable.filter(companyId => {

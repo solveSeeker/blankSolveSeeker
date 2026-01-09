@@ -77,11 +77,17 @@ export function ManageUserRolesDialog({
       // Roles a insertar (nuevos roles que no existen)
       const rolesToInsert = selectedRoleIds.filter(roleId => !existingRoleIds.includes(roleId))
 
-      // Roles a habilitar (existen pero deben estar enabled)
-      const rolesToEnable = selectedRoleIds.filter(roleId => existingRoleIds.includes(roleId))
+      // Roles a habilitar (existen DESHABILITADOS pero ahora están seleccionados)
+      const rolesToEnable = selectedRoleIds.filter(roleId => {
+        const existing = existingRoles.find(r => r.role_id === roleId)
+        return existing && !existing.enabled
+      })
 
-      // Roles a deshabilitar (existen pero no están seleccionados)
-      const rolesToDisable = existingRoleIds.filter(roleId => !selectedRoleIds.includes(roleId))
+      // Roles a deshabilitar (existen HABILITADOS pero ya NO están seleccionados)
+      const rolesToDisable = existingRoleIds.filter(roleId => {
+        const existing = existingRoles.find(r => r.role_id === roleId)
+        return existing && existing.enabled && !selectedRoleIds.includes(roleId)
+      })
 
       // 🔍 DEBUG LOGS
       console.log('🔍 DEBUG - User:', user.email, user.id)
