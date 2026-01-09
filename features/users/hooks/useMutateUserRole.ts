@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { gql } from 'graphql-request'
-import { getGraphQLClient } from '@/shared/lib/graphql/client'
 
 // Interface para el objeto JSON relatedObjects
 interface UserRoleRelatedObjects {
@@ -20,124 +18,6 @@ interface UserRole {
   updated?: string | null
 }
 
-// GraphQL Query - Obtener roles de un usuario
-const GET_USER_ROLES_BY_PROFILE_QUERY = gql`
-  query GetUserRolesByProfile($profileId: UUID!) {
-    user_rolesCollection(filter: { profile_id: { eq: $profileId } }) {
-      edges {
-        node {
-          id
-          profile_id
-          role_id
-          relatedObjects
-          enabled
-          visible
-          created
-        }
-      }
-    }
-  }
-`
-
-// GraphQL Query - Obtener todos los roles del usuario (enabled y disabled)
-const GET_ALL_USER_ROLES_QUERY = gql`
-  query GetAllUserRoles($profileId: UUID!) {
-    user_rolesCollection(filter: { profile_id: { eq: $profileId } }) {
-      edges {
-        node {
-          id
-          role_id
-          enabled
-        }
-      }
-    }
-  }
-`
-
-// GraphQL Mutation - Insertar user_roles
-const INSERT_USER_ROLES_MUTATION = gql`
-  mutation InsertUserRoles($objects: [user_rolesInsertInput!]!) {
-    insertIntouser_rolesCollection(objects: $objects) {
-      affectedCount
-      records {
-        id
-        profile_id
-        role_id
-        relatedObjects
-        enabled
-        visible
-        created
-      }
-    }
-  }
-`
-
-// GraphQL Mutation - Actualizar user_roles
-const UPDATE_USER_ROLES_MUTATION = gql`
-  mutation UpdateUserRoles($filter: user_rolesFilter!, $set: user_rolesUpdateInput!) {
-    updateuser_rolesCollection(filter: $filter, set: $set) {
-      affectedCount
-      records {
-        id
-        enabled
-      }
-    }
-  }
-`
-
-// GraphQL Mutation - Eliminar user_roles
-const DELETE_USER_ROLES_MUTATION = gql`
-  mutation DeleteUserRoles($ids: [UUID!]!) {
-    deleteFromuser_rolesCollection(filter: { id: { in: $ids } }) {
-      affectedCount
-    }
-  }
-`
-
-// Response interfaces
-interface GetUserRolesByProfileResponse {
-  user_rolesCollection: {
-    edges: Array<{
-      node: UserRole
-    }>
-  }
-}
-
-interface GetAllUserRolesResponse {
-  user_rolesCollection: {
-    edges: Array<{
-      node: {
-        id: string
-        role_id: string
-        enabled: boolean
-      }
-    }>
-  }
-}
-
-interface InsertUserRolesResponse {
-  insertIntouser_rolesCollection: {
-    affectedCount: number
-    records: UserRole[]
-  }
-}
-
-interface UpdateUserRolesResponse {
-  updateuser_rolesCollection: {
-    affectedCount: number
-    records: Array<{
-      id: string
-      enabled: boolean
-    }>
-  }
-}
-
-interface DeleteUserRolesResponse {
-  deleteFromuser_rolesCollection: {
-    affectedCount: number
-  }
-}
-
 // Input interface para insertar user_role
 interface InsertUserRoleInput {
   profileId: string
@@ -155,6 +35,14 @@ interface UpdateUserRolesInput {
   enabled: boolean
 }
 
+/**
+ * Hook para operaciones CRUD en user_roles
+ *
+ * NOTA TEMPORAL: Este hook usa el API route /api/user-roles en lugar de GraphQL
+ * debido a que pg_graphql no expone correctamente user_rolesCollection.
+ *
+ * TODO: Migrar a GraphQL cuando se resuelva el problema con pg_graphql
+ */
 export function useMutateUserRole() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
@@ -164,16 +52,15 @@ export function useMutateUserRole() {
    */
   const fetchByProfile = async (profileId: string): Promise<UserRole[]> => {
     try {
-      const client = await getGraphQLClient()
+      const response = await fetch(`/api/user-roles?profileId=${profileId}`)
 
-      const response = await client.request<GetUserRolesByProfileResponse>(
-        GET_USER_ROLES_BY_PROFILE_QUERY,
-        { profileId }
-      )
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al cargar roles del usuario')
+      }
 
-      return response.user_rolesCollection.edges
-        .map(edge => edge.node)
-        .filter(role => role.enabled)
+      const data: UserRole[] = await response.json()
+      return data.filter(role => role.enabled)
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Error al cargar roles del usuario')
       console.error('Error en fetchByProfile:', error)
@@ -186,14 +73,15 @@ export function useMutateUserRole() {
    */
   const fetchAllByProfile = async (profileId: string) => {
     try {
-      const client = await getGraphQLClient()
+      const response = await fetch(`/api/user-roles?profileId=${profileId}`)
 
-      const response = await client.request<GetAllUserRolesResponse>(
-        GET_ALL_USER_ROLES_QUERY,
-        { profileId }
-      )
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al cargar todos los roles del usuario')
+      }
 
-      return response.user_rolesCollection.edges.map(edge => edge.node)
+      const data: UserRole[] = await response.json()
+      return data
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Error al cargar todos los roles del usuario')
       console.error('Error en fetchAllByProfile:', error)
@@ -208,8 +96,6 @@ export function useMutateUserRole() {
     try {
       setIsLoading(true)
       setError(null)
-
-      const client = await getGraphQLClient()
 
       // Construir objetos con relatedObjects
       const objects = inputs.map(input => {
@@ -227,7 +113,7 @@ export function useMutateUserRole() {
         return {
           profile_id: input.profileId,
           role_id: input.roleId,
-          relatedObjects: relatedObjects,  // GraphQL lo convierte a JSON
+          relatedObjects: relatedObjects,
           enabled: input.enabled ?? true,
           visible: input.visible ?? true
         }
@@ -235,14 +121,24 @@ export function useMutateUserRole() {
 
       console.log('🔍 DEBUG - Insertando user_roles:', objects)
 
-      const response = await client.request<InsertUserRolesResponse>(
-        INSERT_USER_ROLES_MUTATION,
-        { objects }
-      )
+      const response = await fetch('/api/user-roles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ objects }),
+      })
 
-      console.log('✅ user_roles insertados:', response.insertIntouser_rolesCollection.affectedCount)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al insertar roles')
+      }
 
-      return response.insertIntouser_rolesCollection.records
+      const data = await response.json()
+
+      console.log('✅ user_roles insertados:', data.affectedCount)
+
+      return data.records
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Error al insertar roles')
       console.error('❌ Error en insert:', error)
@@ -261,24 +157,24 @@ export function useMutateUserRole() {
       setIsLoading(true)
       setError(null)
 
-      const client = await getGraphQLClient()
+      const response = await fetch('/api/user-roles', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ profileId, roleIds, enabled }),
+      })
 
-      const response = await client.request<UpdateUserRolesResponse>(
-        UPDATE_USER_ROLES_MUTATION,
-        {
-          filter: {
-            profile_id: { eq: profileId },
-            role_id: { in: roleIds }
-          },
-          set: {
-            enabled
-          }
-        }
-      )
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al actualizar estado de roles')
+      }
 
-      console.log(`✅ user_roles actualizados a enabled=${enabled}:`, response.updateuser_rolesCollection.affectedCount)
+      const data = await response.json()
 
-      return response.updateuser_rolesCollection.records
+      console.log(`✅ user_roles actualizados a enabled=${enabled}:`, data.affectedCount)
+
+      return data.records
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Error al actualizar estado de roles')
       console.error('❌ Error en updateStatus:', error)
@@ -297,16 +193,24 @@ export function useMutateUserRole() {
       setIsLoading(true)
       setError(null)
 
-      const client = await getGraphQLClient()
+      const response = await fetch('/api/user-roles', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids }),
+      })
 
-      const response = await client.request<DeleteUserRolesResponse>(
-        DELETE_USER_ROLES_MUTATION,
-        { ids }
-      )
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al eliminar roles')
+      }
 
-      console.log('✅ user_roles eliminados:', response.deleteFromuser_rolesCollection.affectedCount)
+      const data = await response.json()
 
-      return response.deleteFromuser_rolesCollection.affectedCount
+      console.log('✅ user_roles eliminados:', data.affectedCount)
+
+      return data.affectedCount
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Error al eliminar roles')
       console.error('❌ Error en remove:', error)

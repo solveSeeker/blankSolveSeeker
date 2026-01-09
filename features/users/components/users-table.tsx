@@ -29,7 +29,7 @@ export function UsersTable() {
   const getActiveRolesCount = (userId: string, isSysAdmin?: boolean): number => {
     if (isSysAdmin) return 0 // SysAdmin users don't have countable roles
     return userRoles.filter(
-      (ur) => ur.user_id === userId && ur.visible === true && ur.enabled === true
+      (ur) => ur.profile_id === userId && ur.visible === true && ur.enabled === true
     ).length
   }
   const [searchTerm, setSearchTerm] = useState('')
