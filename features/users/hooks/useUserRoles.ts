@@ -1,20 +1,51 @@
 import { useEffect, useState } from 'react'
+import { gql } from 'graphql-request'
+import { getGraphQLClient } from '@/shared/lib/graphql/client'
 
 export interface UserRole {
-  profile_id: string  // ✅ Actualizado de user_id a profile_id
+  profile_id: string
   role_id: string
   role_name?: string
   visible?: boolean
   enabled?: boolean
 }
 
+const GET_ALL_USER_ROLES_QUERY = gql`
+  query GetAllUserRoles {
+    user_rolesCollection {
+      edges {
+        node {
+          profile_id
+          role_id
+          enabled
+          visible
+          roles {
+            name
+          }
+        }
+      }
+    }
+  }
+`
+
+interface UserRolesResponse {
+  user_rolesCollection: {
+    edges: Array<{
+      node: {
+        profile_id: string
+        role_id: string
+        enabled: boolean
+        visible: boolean
+        roles: {
+          name: string
+        } | null
+      }
+    }>
+  }
+}
+
 /**
- * Hook para obtener todos los user_roles
- *
- * NOTA TEMPORAL: Este hook usa el API route /api/user-roles en lugar de GraphQL
- * debido a que pg_graphql no expone correctamente user_rolesCollection.
- *
- * TODO: Migrar a GraphQL cuando se resuelva el problema con pg_graphql
+ * Hook para obtener todos los user_roles usando GraphQL
  */
 export function useUserRoles() {
   const [userRoles, setUserRoles] = useState<UserRole[]>([])
@@ -28,17 +59,19 @@ export function useUserRoles() {
   const fetchUserRoles = async () => {
     try {
       setIsLoading(true)
+      const client = await getGraphQLClient()
 
-      // Obtener todos los user_roles usando el API route
-      const response = await fetch('/api/user-roles')
+      const data = await client.request<UserRolesResponse>(GET_ALL_USER_ROLES_QUERY)
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al cargar roles de usuarios')
-      }
+      const mappedData = data.user_rolesCollection.edges.map((edge) => ({
+        profile_id: edge.node.profile_id,
+        role_id: edge.node.role_id,
+        role_name: edge.node.roles?.name || 'unknown',
+        visible: edge.node.visible,
+        enabled: edge.node.enabled,
+      }))
 
-      const data: UserRole[] = await response.json()
-      setUserRoles(data)
+      setUserRoles(mappedData)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar roles de usuarios')
