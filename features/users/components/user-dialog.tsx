@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { createClient } from '@/shared/lib/supabase/client'
+import { useMutateProfile } from '@/features/users/hooks/useMutateProfile'
 import { type Profile } from '@/features/users/hooks/useProfiles'
 import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
 
@@ -19,6 +19,7 @@ interface UserDialogProps {
 
 export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProps) {
   const { isSysAdmin } = useCurrentUserProfile()
+  const { update: updateProfile, isLoading: isUpdating } = useMutateProfile()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [isSysAdminUser, setIsSysAdminUser] = useState(false)
@@ -44,16 +45,8 @@ export function UserDialog({ open, onOpenChange, user, onSaved }: UserDialogProp
 
     try {
       if (user) {
-        // Update existing user - solo actualizar perfil
-        const supabase = createClient()
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            fullName: fullName,
-          })
-          .eq('id', user.id)
-
-        if (updateError) throw updateError
+        // Update existing user - solo actualizar perfil con GraphQL
+        await updateProfile(user.id, { fullName })
       } else {
         // Create new user - usar API route que crea auth.users + perfil
         const response = await fetch('/api/admin/users', {

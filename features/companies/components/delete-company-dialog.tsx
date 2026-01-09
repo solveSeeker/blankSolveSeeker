@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/shared/lib/supabase/client'
+import { useMutateCompany } from '@/features/companies/hooks/useMutateCompany'
 import type { Company } from '../types'
 import {
   AlertDialog,
@@ -27,7 +28,7 @@ export function DeleteCompanyDialog({
   company,
   onDeleted,
 }: DeleteCompanyDialogProps) {
-  const [loading, setLoading] = useState(false)
+  const { delete: deleteCompany, isLoading: isDeleting } = useMutateCompany()
   const [error, setError] = useState<string | null>(null)
   const [technicalError, setTechnicalError] = useState<string | null>(null)
   const [associatedUsers, setAssociatedUsers] = useState<string[]>([])
@@ -136,45 +137,18 @@ export function DeleteCompanyDialog({
   const handleDelete = async () => {
     if (!company || hasRestrictions) return
 
-    setLoading(true)
     setError(null)
     setTechnicalError(null)
 
     try {
-      const supabase = createClient()
-
-      // Primero eliminar todas las asignaciones deshabilitadas (enabled=false)
-      const { error: userCompaniesError } = await supabase
-        .from('user_companies')
-        .delete()
-        .eq('company_id', company.id)
-        .eq('enabled', false)
-
-      if (userCompaniesError) {
-        setTechnicalError(userCompaniesError.message)
-        setError('Error al eliminar las asignaciones deshabilitadas.')
-        throw userCompaniesError
-      }
-
-      // Luego eliminar la empresa
-      const { error: deleteError } = await supabase
-        .from('companies')
-        .delete()
-        .eq('id', company.id)
-
-      if (deleteError) {
-        setTechnicalError(deleteError.message)
-        setError('Error al eliminar la empresa.')
-        throw deleteError
-      }
-
+      await deleteCompany(company.id)
       onDeleted()
       onOpenChange(false)
     } catch (err: any) {
       const errorMessage = err?.message || err?.msg || 'Error al eliminar empresa'
+      setTechnicalError(errorMessage)
+      setError('Error al eliminar la empresa.')
       console.error('Error deleting company:', errorMessage)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -234,16 +208,16 @@ export function DeleteCompanyDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={loading || checkingRestrictions}
+            disabled={isDeleting || checkingRestrictions}
           >
             Cancelar
           </Button>
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={loading || checkingRestrictions || hasRestrictions}
+            disabled={isDeleting || checkingRestrictions || hasRestrictions}
           >
-            {checkingRestrictions ? 'Verificando...' : loading ? 'Eliminando...' : 'Eliminar'}
+            {checkingRestrictions ? 'Verificando...' : isDeleting ? 'Eliminando...' : 'Eliminar'}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

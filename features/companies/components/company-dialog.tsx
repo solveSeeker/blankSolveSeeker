@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/shared/lib/supabase/client'
-import type { Company, CreateCompanyInput, UpdateCompanyInput } from '../types'
+import { useMutateCompany } from '@/features/companies/hooks/useMutateCompany'
+import type { Company } from '../types'
 import {
   Dialog,
   DialogContent,
@@ -24,12 +24,12 @@ interface CompanyDialogProps {
 }
 
 export function CompanyDialog({ open, onOpenChange, company, onSaved }: CompanyDialogProps) {
+  const { insert, update, isLoading: isMutating } = useMutateCompany()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [primaryColor, setPrimaryColor] = useState('#001f3f')
   const [secondaryColor, setSecondaryColor] = useState('#0074D9')
   const [accentColor, setAccentColor] = useState('#FF4136')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isEditing = !!company
@@ -67,52 +67,33 @@ export function CompanyDialog({ open, onOpenChange, company, onSaved }: CompanyD
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError(null)
 
     try {
-      const supabase = createClient()
-
       if (isEditing && company) {
         // Update existing company
-        const updateData: UpdateCompanyInput = {
+        await update(company.id, {
           name,
           slug,
           primary_color: primaryColor,
           secondary_color: secondaryColor,
           accent_color: accentColor,
-        }
-
-        const { error: updateError } = await supabase
-          .from('companies')
-          .update(updateData)
-          .eq('id', company.id)
-
-        if (updateError) throw updateError
+        })
       } else {
         // Create new company
-        const createData = {
+        await insert({
           name,
           slug,
-          key: slug, // usar slug como key
+          logo_url: null,
           primary_color: primaryColor,
           secondary_color: secondaryColor,
           accent_color: accentColor,
-          settings: {},
-        }
-
-        const { error: insertError } = await supabase
-          .from('companies')
-          .insert(createData)
-
-        if (insertError) throw insertError
+        })
       }
 
       onSaved()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar empresa')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -228,12 +209,12 @@ export function CompanyDialog({ open, onOpenChange, company, onSaved }: CompanyD
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={loading}
+              disabled={isMutating}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="bg-gray-900 hover:bg-gray-800 text-white">
-              {loading ? 'Guardando...' : 'Guardar'}
+            <Button type="submit" disabled={isMutating} className="bg-gray-900 hover:bg-gray-800 text-white">
+              {isMutating ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
         </form>

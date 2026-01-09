@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useCompanies } from '../hooks'
 import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
 import { useUserCompanies } from '@/features/users/hooks/useUserCompanies'
-import { companyService } from '../services'
+import { useMutateCompany } from '@/features/companies/hooks/useMutateCompany'
 import type { Company } from '../types'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,7 @@ export function CompaniesTable() {
   const { companies, isLoading, error, refetch } = useCompanies()
   const { userCompanies } = useUserCompanies()
   const { isSysAdmin } = useCurrentUserProfile()
+  const { updateVisibility, updateEnabled } = useMutateCompany()
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredCompanies, setFilteredCompanies] = useState(companies || [])
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
@@ -76,7 +77,7 @@ export function CompaniesTable() {
 
     try {
       setIsToggling(true)
-      await companyService.updateVisibility(company.id, !company.visible)
+      await updateVisibility(company.id, !company.visible)
       refetch()
     } catch (err) {
       console.error('Error al cambiar visibilidad:', err)
@@ -88,7 +89,7 @@ export function CompaniesTable() {
   const handleToggleEnabled = async (company: Company) => {
     try {
       setIsToggling(true)
-      await companyService.updateEnabled(company.id, !company.enabled)
+      await updateEnabled(company.id, !company.enabled)
       refetch()
     } catch (err) {
       console.error('Error al cambiar estado activo:', err)
@@ -113,7 +114,7 @@ export function CompaniesTable() {
 
     try {
       setIsHiding(true)
-      await companyService.hideCompany(selectedCompany.id)
+      await updateVisibility(selectedCompany.id, false)
       refetch()
       setIsHideDialogOpen(false)
       setSelectedCompany(null)

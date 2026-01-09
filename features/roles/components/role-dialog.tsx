@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Role, CreateRoleInput } from '@/features/roles/types'
-import { roleService } from '@/features/roles/services'
+import { useMutateRole } from '@/features/roles/hooks/useMutateRole'
 import {
   Dialog,
   DialogContent,
@@ -23,12 +23,12 @@ interface RoleDialogProps {
 }
 
 export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialogProps) {
+  const { insert, update, isLoading: isMutating } = useMutateRole()
   const [formData, setFormData] = useState<CreateRoleInput>({
     name: '',
     description: '',
     hrchy: null
   })
-  const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -58,20 +58,16 @@ export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialog
     }
 
     try {
-      setIsSaving(true)
-
       if (role) {
-        await roleService.updateRole(role.id, formData)
+        await update(role.id, formData)
       } else {
-        await roleService.createRole(formData)
+        await insert(formData)
       }
 
       onSuccess()
       onOpenChange(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar el rol')
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -95,7 +91,7 @@ export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialog
               placeholder="ej: Administrador"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              disabled={isSaving}
+              disabled={isMutating}
             />
           </div>
 
@@ -106,7 +102,7 @@ export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialog
               placeholder="ej: Acceso completo al sistema"
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
-              disabled={isSaving}
+              disabled={isMutating}
             />
           </div>
 
@@ -118,7 +114,7 @@ export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialog
               placeholder="ej: 1"
               value={formData.hrchy !== null ? formData.hrchy : ''}
               onChange={e => setFormData({ ...formData, hrchy: e.target.value ? parseInt(e.target.value) : null })}
-              disabled={isSaving}
+              disabled={isMutating}
             />
           </div>
 
@@ -133,12 +129,12 @@ export function RoleDialog({ isOpen, onOpenChange, role, onSuccess }: RoleDialog
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={isSaving}
+              disabled={isMutating}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSaving} className="bg-gray-900 hover:bg-gray-800 text-white">
-              {isSaving ? 'Guardando...' : 'Guardar'}
+            <Button type="submit" disabled={isMutating} className="bg-gray-900 hover:bg-gray-800 text-white">
+              {isMutating ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
         </form>

@@ -1,0 +1,236 @@
+
+> white-label-order-system@1.0.0 dev
+> next dev -p 4855
+
+   ▲ Next.js 15.5.7
+   - Local:        http://localhost:4855
+   - Network:      http://192.168.1.108:4855
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · serverActions
+
+ ✓ Starting...
+ ✓ Ready in 1846ms
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1610ms (200 modules)
+ ○ Compiling / ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (128kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled / in 4.6s (545 modules)
+ GET / 200 in 5581ms
+ ⚠ Cross origin request detected from 192.168.1.108 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ ○ Compiling /auth/login ...
+ ✓ Compiled /auth/login in 1213ms (766 modules)
+ GET /auth/login 200 in 1332ms
+ GET /auth/login 200 in 29ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 3.1s (1267 modules)
+ GET /dashboard 200 in 3236ms
+ GET /dashboard 200 in 38ms
+ ○ Compiling /dashboard/users ...
+ ✓ Compiled /dashboard/users in 908ms (1346 modules)
+ GET /dashboard/users 200 in 1013ms
+ GET /dashboard/users 200 in 32ms
+ ○ Compiling /dashboard/roles ...
+ ✓ Compiled /dashboard/roles in 776ms (1368 modules)
+ GET /dashboard/roles 200 in 891ms
+ GET /dashboard/users 200 in 34ms
+AuthApiError: Invalid Refresh Token: Refresh Token Not Found {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_not_found'
+}
+AuthApiError: Invalid Refresh Token: Refresh Token Not Found {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_not_found'
+}
+ GET / 200 in 357ms
+AuthApiError: Invalid Refresh Token: Refresh Token Not Found {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_not_found'
+}
+AuthApiError: Invalid Refresh Token: Refresh Token Not Found {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_not_found'
+}
+ GET /auth/login 200 in 87ms
+ GET /dashboard 200 in 526ms
+ GET /dashboard 200 in 37ms
+ GET /dashboard/users 200 in 165ms
+ GET /dashboard/users 200 in 24ms
+ GET /dashboard/users 200 in 62ms
+ ✓ Compiled in 1981ms (1377 modules)
+ GET /dashboard/users 200 in 128ms
+ GET /dashboard/users 200 in 52ms
+ ✓ Compiled in 709ms (1377 modules)
+ GET /dashboard/users 200 in 211ms
+ GET /dashboard/users 200 in 67ms
+ ✓ Compiled in 968ms (1377 modules)
+ GET /dashboard/users 200 in 229ms
+ GET /dashboard/users 200 in 228ms
+ ✓ Compiled in 1539ms (1377 modules)
+ GET /dashboard/users 200 in 114ms
+ GET /dashboard/users 200 in 137ms
+ ✓ Compiled in 843ms (1377 modules)
+ GET /dashboard/users 200 in 165ms
+ GET /dashboard/users 200 in 227ms
+ ✓ Compiled in 811ms (1377 modules)
+ GET /dashboard/users 200 in 190ms
+ GET /dashboard/users 200 in 210ms
+ ✓ Compiled in 919ms (1377 modules)
+ GET /dashboard/users 200 in 112ms
+ GET /dashboard/users 200 in 110ms
+ GET /dashboard/users 200 in 503ms
+ ✓ Compiled in 1094ms (1377 modules)
+ GET /dashboard/users 200 in 182ms
+ GET /dashboard/users 200 in 51ms
+ ✓ Compiled in 685ms (1377 modules)
+ GET /dashboard/users 200 in 279ms
+ GET /dashboard/users 200 in 291ms
+ ✓ Compiled in 820ms (1377 modules)
+ GET /dashboard/users 200 in 193ms
+ GET /dashboard/users 200 in 213ms
+ ✓ Compiled in 637ms (1377 modules)
+ GET /dashboard/users 200 in 168ms
+ GET /dashboard/users 200 in 171ms
+ ✓ Compiled in 766ms (1377 modules)
+ GET /dashboard/users 200 in 111ms
+ GET /dashboard/users 200 in 61ms
+ ✓ Compiled in 593ms (1377 modules)
+ GET /dashboard/users 200 in 108ms
+ GET /dashboard/users 200 in 141ms
+ ✓ Compiled in 784ms (1377 modules)
+ GET /dashboard/users 200 in 153ms
+ GET /dashboard/users 200 in 67ms
+ ✓ Compiled in 1612ms (1577 modules)
+ GET /dashboard/users 200 in 570ms
+ GET /dashboard/users 200 in 581ms
+ GET /dashboard/users 200 in 49ms
+ GET /dashboard/users 200 in 44ms
+ ✓ Compiled in 448ms (1377 modules)
+ GET /dashboard/users 200 in 100ms
+ GET /dashboard/users 200 in 44ms
+ ○ Compiling /api/user-roles ...
+ ✓ Compiled /api/user-roles in 1822ms (1473 modules)
+ GET /api/user-roles?profileId=271b4441-a26b-4d6d-98d3-a0d38a25d297 200 in 2665ms
+ GET /api/user-roles?profileId=271b4441-a26b-4d6d-98d3-a0d38a25d297 200 in 492ms
+ GET /api/user-roles?profileId=271b4441-a26b-4d6d-98d3-a0d38a25d297 200 in 501ms
+Error inserting user_roles: {
+  code: '23502',
+  details: null,
+  hint: null,
+  message: 'null value in column "key" of relation "user_roles" violates not-null constraint'
+}
+ POST /api/user-roles 400 in 516ms
+ ✓ Compiled in 931ms (1487 modules)
+ GET /dashboard/users 200 in 101ms
+ GET /dashboard/users 200 in 39ms
+ ✓ Compiled in 864ms (1378 modules)
+ GET /dashboard/users 200 in 151ms
+ GET /dashboard/users 200 in 33ms
+ ✓ Compiled /api/user-roles in 227ms (865 modules)
+ GET /dashboard/users 200 in 138ms
+ GET /dashboard/users 200 in 120ms
+ GET /api/user-roles?profileId=271b4441-a26b-4d6d-98d3-a0d38a25d297 200 in 960ms
+ GET /api/user-roles?profileId=271b4441-a26b-4d6d-98d3-a0d38a25d297 200 in 450ms
+ POST /api/user-roles 200 in 467ms
+ PATCH /api/user-roles 200 in 525ms
+ ✓ Compiled in 1381ms (1378 modules)
+ GET /dashboard/users 200 in 137ms
+ GET /dashboard/users 200 in 30ms
+ ✓ Compiled in 506ms (622 modules)
+ GET /dashboard/users 200 in 77ms
+ GET /dashboard/users 200 in 79ms
+ ✓ Compiled in 703ms (1378 modules)
+ GET /dashboard/users 200 in 158ms
+ GET /dashboard/users 200 in 41ms
+ ✓ Compiled in 1749ms (1378 modules)
+ GET /dashboard/users 200 in 109ms
+ GET /dashboard/users 200 in 38ms
+ GET /dashboard/users 200 in 432ms
+ ✓ Compiled /api/user-roles in 344ms (865 modules)
+ GET /dashboard/users 200 in 130ms
+ GET /dashboard/users 200 in 49ms
+ GET /api/user-roles 200 in 1751ms
+ GET /api/user-roles?profileId=271b4441-a26b-4d6d-98d3-a0d38a25d297 200 in 516ms
+ ✓ Compiled in 984ms (1378 modules)
+ GET /dashboard/users 200 in 162ms
+ GET /dashboard/users 200 in 165ms
+ ✓ Compiled in 1013ms (1378 modules)
+ GET /dashboard/users 200 in 114ms
+ GET /dashboard/users 200 in 113ms
+ ✓ Compiled in 789ms (1378 modules)
+ GET /dashboard/users 200 in 115ms
+ GET /dashboard/users 200 in 133ms
+ ✓ Compiled in 618ms (1378 modules)
+ GET /dashboard/users 200 in 73ms
+ GET /dashboard/users 200 in 48ms
+ ✓ Compiled in 482ms (1378 modules)
+ GET /dashboard/users 200 in 140ms
+ GET /dashboard/users 200 in 134ms
+ ✓ Compiled in 490ms (1378 modules)
+ GET /dashboard/users 200 in 116ms
+ GET /dashboard/users 200 in 123ms
+ ✓ Compiled in 469ms (1378 modules)
+ GET /dashboard/users 200 in 79ms
+ GET /dashboard/users 200 in 87ms
+ ✓ Compiled in 902ms (1378 modules)
+ GET /dashboard/users 200 in 79ms
+ GET /dashboard/users 200 in 28ms
+ ✓ Compiled in 543ms (1378 modules)
+ GET /dashboard/users 200 in 107ms
+ GET /dashboard/users 200 in 62ms
+ GET /dashboard/users 200 in 369ms
+ ✓ Compiled in 1496ms (1378 modules)
+ GET /dashboard/users 200 in 195ms
+ GET /dashboard/users 200 in 196ms
+ ✓ Compiled in 1264ms (1577 modules)
+ GET /dashboard/users 200 in 113ms
+ GET /dashboard/users 200 in 40ms
+ GET /dashboard/users 200 in 35ms
+ GET /dashboard/users 200 in 35ms
+ GET /dashboard/users 200 in 290ms
+ ○ Compiling /dashboard/companies ...
+ ✓ Compiled /dashboard/companies in 1470ms (1400 modules)
+ GET /dashboard/companies 200 in 1583ms
+ GET /dashboard/users 200 in 44ms
+ GET /dashboard/companies 200 in 28ms
+ GET /dashboard/roles 200 in 32ms
+ GET /dashboard/companies 200 in 32ms
+ ✓ Compiled in 1294ms (1400 modules)
+ GET /dashboard/users 200 in 150ms
+ GET /dashboard/companies 200 in 41ms
+ ✓ Compiled in 823ms (1400 modules)
+ GET /dashboard/companies 200 in 156ms
+ GET /dashboard/users 200 in 169ms
+ ✓ Compiled in 498ms (1400 modules)
+ GET /dashboard/users 200 in 75ms
+ GET /dashboard/companies 200 in 39ms
+ ✓ Compiled in 450ms (1400 modules)
+ GET /dashboard/users 200 in 73ms
+ GET /dashboard/companies 200 in 57ms
+ ✓ Compiled in 658ms (1400 modules)
+ GET /dashboard/users 200 in 101ms
+ GET /dashboard/companies 200 in 71ms
+ ✓ Compiled in 765ms (1400 modules)
+ GET /dashboard/users 200 in 142ms
+ GET /dashboard/companies 200 in 131ms
+ ✓ Compiled in 522ms (1400 modules)
+ GET /dashboard/users 200 in 85ms
+ GET /dashboard/companies 200 in 57ms
+ GET /dashboard/users 200 in 30ms
+ GET /dashboard/companies 200 in 26ms
+ GET /dashboard/users 200 in 38ms
+ GET /dashboard/companies 200 in 78ms
+ GET /dashboard/users 200 in 36ms
+ ○ Compiling /dashboard/audit ...
+ ✓ Compiled /dashboard/audit in 1835ms (1439 modules)
+ GET /dashboard/audit 200 in 1963ms
+ GET /dashboard/users 200 in 40ms
+ GET /dashboard/audit 200 in 24ms
+ GET /dashboard/users 200 in 71ms
+ GET /dashboard/audit 200 in 32ms
+ GET /dashboard/users 200 in 31ms

@@ -5,7 +5,7 @@ import { useRoles } from '@/features/roles/hooks'
 import { useProfiles } from '@/features/users/hooks/useProfiles'
 import { useUserRoles } from '@/features/users/hooks/useUserRoles'
 import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
-import { roleService } from '@/features/roles/services'
+import { useMutateRole } from '@/features/roles/hooks/useMutateRole'
 import { Role } from '@/features/roles/types'
 import {
   Table,
@@ -29,6 +29,7 @@ export function RolesTable() {
   const { profiles } = useProfiles()
   const { userRoles } = useUserRoles()
   const { isSysAdmin } = useCurrentUserProfile()
+  const { delete: deleteRole, updateVisibility, updateEnabled } = useMutateRole()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -71,7 +72,7 @@ export function RolesTable() {
 
     try {
       setIsDeleting(true)
-      await roleService.deleteRole(selectedRole.id)
+      await deleteRole(selectedRole.id)
       await refetch()
       setIsDeleteDialogOpen(false)
       setSelectedRole(null)
@@ -80,7 +81,7 @@ export function RolesTable() {
     } finally {
       setIsDeleting(false)
     }
-  }, [selectedRole, refetch])
+  }, [selectedRole, deleteRole, refetch])
 
   const handleCreateSuccess = useCallback(async () => {
     await refetch()
@@ -98,26 +99,26 @@ export function RolesTable() {
 
     try {
       setIsToggling(true)
-      await roleService.updateVisibility(role.id, !role.visible)
+      await updateVisibility(role.id, !role.visible)
       await refetch()
     } catch (error) {
       console.error('Error toggling visible:', error)
     } finally {
       setIsToggling(false)
     }
-  }, [isSysAdmin, refetch])
+  }, [isSysAdmin, updateVisibility, refetch])
 
   const handleToggleEnabled = useCallback(async (role: Role) => {
     try {
       setIsToggling(true)
-      await roleService.updateEnabled(role.id, !role.enabled)
+      await updateEnabled(role.id, !role.enabled)
       await refetch()
     } catch (error) {
       console.error('Error toggling enabled:', error)
     } finally {
       setIsToggling(false)
     }
-  }, [refetch])
+  }, [updateEnabled, refetch])
 
   const handleVisibilityButtonClick = useCallback((role: Role) => {
     if (isSysAdmin) {
@@ -135,7 +136,7 @@ export function RolesTable() {
 
     try {
       setIsHiding(true)
-      await roleService.hideRole(selectedRole.id)
+      await updateVisibility(selectedRole.id, false)
       await refetch()
       setIsHideDialogOpen(false)
       setSelectedRole(null)
@@ -144,7 +145,7 @@ export function RolesTable() {
     } finally {
       setIsHiding(false)
     }
-  }, [selectedRole, refetch])
+  }, [selectedRole, updateVisibility, refetch])
 
   if (isLoading) {
     return (

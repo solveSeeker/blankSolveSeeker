@@ -1,41 +1,78 @@
-'use client'
+import { useEffect, useState, useCallback } from 'react'
+import { gql } from 'graphql-request'
+import { getGraphQLClient } from '@/shared/lib/graphql/client'
+import { useCurrentUserProfile } from '@/features/users/hooks/useCurrentUserProfile'
+import type { Role } from '../types'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Role } from '../types'
+const GET_ROLES_QUERY = gql`
+  query GetRoles {
+    rolesCollection(orderBy: [{ hrchy: AscNullsLast }, { name: AscNullsLast }]) {
+      edges {
+        node {
+          id
+          key
+          name
+          description
+          hrchy
+          visible
+          enabled
+          created
+          updated
+        }
+      }
+    }
+  }
+`
+
+interface RolesResponse {
+  rolesCollection: {
+    edges: Array<{
+      node: Role
+    }>
+  }
+}
 
 export function useRoles() {
+  const { isSysAdmin, isLoading: isLoadingProfile } = useCurrentUserProfile()
   const [roles, setRoles] = useState<Role[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchRoles = useCallback(async () => {
     try {
       setIsLoading(true)
-      setError(null)
+      const client = await getGraphQLClient()
 
-      const response = await fetch('/api/roles')
-      if (!response.ok) {
-        throw new Error('Failed to fetch roles')
+      const data = await client.request<RolesResponse>(GET_ROLES_QUERY)
+
+      let rolesList = data.rolesCollection.edges.map((edge) => edge.node)
+
+      // Filter by visible=true for non-sysAdmin users
+      if (!isSysAdmin) {
+        rolesList = rolesList.filter(role => role.visible === true)
       }
 
-      const data = await response.json()
-      setRoles(data)
+      setRoles(rolesList)
+      setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'))
+      setError(err instanceof Error ? err.message : 'Error al cargar roles')
       setRoles([])
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [isSysAdmin])
 
   useEffect(() => {
-    fetchRoles()
-  }, [fetchRoles])
+    // Solo fetch cuando el perfil haya cargado
+    if (!isLoadingProfile) {
+      fetchRoles()
+    }
+  }, [fetchRoles, isLoadingProfile])
 
   return {
     roles,
     isLoading,
     error,
-    refetch: fetchRoles
+    refetch: fetchRoles,
   }
 }
