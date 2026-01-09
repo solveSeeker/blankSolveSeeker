@@ -84,7 +84,7 @@ export function CompanyDialog({ open, onOpenChange, company, onSaved }: CompanyD
         await insert({
           name,
           slug,
-          logo_url: null,
+          logo_url: undefined,
           primary_color: primaryColor,
           secondary_color: secondaryColor,
           accent_color: accentColor,
